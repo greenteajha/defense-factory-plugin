@@ -1,0 +1,8 @@
+{
+  "name": "defense-factory-plugin",
+  "version": "0.1.0",
+  "description": "Evidence-led repository threat modeling from the shared skills directory.",
+  "author": {
+    "name": "Jeremy Teo"
+  }
+}

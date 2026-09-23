@@ -1,6 +1,6 @@
 # Defense Factory Plugin
 
-An early, provider-neutral application security plugin inspired by [OpenAI's Defense Factory](https://openai.com/the-defense-factory/). The first release provides an evidence-linked repository threat-modeling skill and [contracts for a six-stage workflow](docs/workflow-contracts.md). It is an independent project, not an OpenAI product or an implementation of OpenAI's full Defense Factory.
+An early, provider-neutral application security plugin inspired by [OpenAI's Defense Factory](https://openai.com/the-defense-factory/). The current candidate provides an evidence-linked repository threat-modeling skill and [contracts for a six-stage workflow](docs/workflow-contracts.md). It is an independent project, not an OpenAI product or an implementation of OpenAI's full Defense Factory.
 
 ## What is in the 0.1.0 candidate
 
@@ -22,7 +22,7 @@ scripts/check-package.py            packaging checks
 
 ## Install and use
 
-| Client surface | Route | Status for this release |
+| Client surface | Route | Status for this candidate |
 | --- | --- | --- |
 | Claude Code | Clone/download the repository and run `claude --plugin-dir /absolute/path/to/defense-factory-plugin`. | Package layout prepared; live client activation still needs a smoke test. |
 | ChatGPT desktop / Codex local | Add the repository as a plugin marketplace with `codex plugin marketplace add greenteajha/defense-factory-plugin`, then install and enable **Defense Factory** in the Plugins Directory. The included local catalog points to this repository root. | Catalog prepared; live client activation still needs a smoke test. |

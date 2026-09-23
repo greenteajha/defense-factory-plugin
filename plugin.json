@@ -1,0 +1,24 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "defense-factory-plugin",
+  "version": "0.1.0",
+  "description": "Evidence-led application security workflows, beginning with repository threat modeling.",
+  "author": {
+    "name": "Jeremy Teo"
+  },
+  "repository": "https://github.com/greenteajha/defense-factory-plugin",
+  "license": "MIT",
+  "keywords": ["application-security", "threat-modeling", "defensive-workflows"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Defense Factory",
+        "shortDescription": "Evidence-led repository threat modeling",
+        "developerName": "Jeremy Teo",
+        "category": "Productivity",
+        "capabilities": ["Read"],
+        "websiteURL": "https://github.com/greenteajha/defense-factory-plugin"
+      }
+    }
+  }
+}

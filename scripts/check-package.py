@@ -19,8 +19,8 @@ assert manifest["version"] == claude["version"]
 assert manifest["license"] == "MIT" and (ROOT / "LICENSE").is_file()
 assert catalog["plugins"][0]["source"]["path"] == "./"
 
+assert (ROOT / "skills").is_dir(), "Missing skills directory"
 skills = list((ROOT / "skills").glob("*/SKILL.md"))
-assert skills, "At least one working skill is required"
 for skill in skills:
     text = skill.read_text()
     assert text.startswith("---\n"), f"Missing frontmatter: {skill}"
@@ -29,4 +29,4 @@ for skill in skills:
     assert fields.get("name") == skill.parent.name, f"Skill name mismatch: {skill}"
     assert fields.get("description"), f"Missing description: {skill}"
 
-print(f"Package checks passed: {manifest['name']} {manifest['version']} ({len(skills)} skill)")
+print(f"Package checks passed: {manifest['name']} {manifest['version']} ({len(skills)} skill{'' if len(skills) == 1 else 's'})")

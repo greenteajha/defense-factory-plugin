@@ -376,6 +376,72 @@ for skill_dir, fields in skills.items():
           f"{relative}: Codex limits the qualified name plugin:skill to 129 characters")
 
 
+def parse_openai_yaml(text):
+    """Parse the two-level mapping of quoted strings and booleans that agents/openai.yaml uses."""
+    data, section = {}, None
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        match = re.fullmatch(r"([a-z_]+):\s*", line)
+        if match:
+            section = data.setdefault(match.group(1), {})
+            continue
+        match = re.fullmatch(r"  ([a-z_]+):\s*(.+?)\s*", line)
+        if not match or section is None:
+            raise ValueError(f"unsupported line {line!r}")
+        key, value = match.groups()
+        if value in ("true", "false"):
+            section[key] = value == "true"
+        elif len(value) >= 2 and value[0] == value[-1] == '"':
+            section[key] = value[1:-1]
+        else:
+            raise ValueError(f"{key}: quote string values")
+    return data
+
+
+# Per-skill Codex UI metadata (skills/<name>/agents/openai.yaml). Sources: codex-rs skills
+# loader metadata.rs and interface.rs, and the skill-creator sample's openai_yaml.md.
+OPENAI_YAML_KEYS = {
+    "interface": {"display_name", "short_description", "default_prompt", "brand_color", "icon_small", "icon_large"},
+    "policy": {"allow_implicit_invocation"},
+}
+for skill_dir in skills:
+    path = skill_dir / "agents" / "openai.yaml"
+    if not path.exists():
+        continue
+    relative = path.relative_to(ROOT)
+    try:
+        meta = parse_openai_yaml(path.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        errors.append(f"{relative}: {exc}")
+        continue
+    for section, values in meta.items():
+        if not check(section in OPENAI_YAML_KEYS,
+                     f"{relative}: '{section}' not yet covered by check-package.py; add its checks first"):
+            continue
+        unknown = set(values) - OPENAI_YAML_KEYS[section]
+        check(not unknown, f"{relative}: unsupported {section} keys {sorted(unknown)}")
+    interface = meta.get("interface", {})
+    for key, limit in (("display_name", 64), ("short_description", 1024), ("default_prompt", 1024)):
+        if key in interface:
+            check(isinstance(interface[key], str) and 0 < len(interface[key]) <= limit,
+                  f"{relative}: interface.{key} must be 1-{limit} characters")
+    if "default_prompt" in interface:
+        check(f"${skill_dir.name}" in str(interface["default_prompt"]),
+              f"{relative}: interface.default_prompt must mention ${skill_dir.name}")
+    if "brand_color" in interface:
+        check(re.fullmatch(r"#[0-9A-Fa-f]{6}", str(interface["brand_color"])),
+              f"{relative}: interface.brand_color must be #RRGGBB")
+    for key in ("icon_small", "icon_large"):
+        if key in interface:
+            icon = str(interface[key])
+            check(icon.startswith("./assets/") and ".." not in icon and (skill_dir / icon).is_file(),
+                  f"{relative}: interface.{key} must be an existing ./assets/ file in the skill")
+    if "allow_implicit_invocation" in meta.get("policy", {}):
+        check(isinstance(meta["policy"]["allow_implicit_invocation"], bool),
+              f"{relative}: policy.allow_implicit_invocation must be true or false")
+
+
 # Cursor -------------------------------------------------------------------------------
 # Sources: cursor.com/docs/reference/plugins and /docs/skills. Cursor reads the root
 # plugin.json as an Agent Plugin, so the shared-core checks above cover its manifest.
@@ -397,7 +463,8 @@ for folder in ("rules", "agents", "commands"):
 # Each client reads these differently. Add checks for one before adding it to the package.
 
 unchecked = [".cursor-plugin", "hooks", ".app.json", ".mcp.json"]
-unchecked += [str(path.relative_to(ROOT)) for path in (ROOT / "skills").glob("*/agents/openai.yaml")]
+unchecked += [str(path.relative_to(ROOT)) for path in (ROOT / "skills").glob("*/agents/*")
+              if path.name != "openai.yaml"]
 for component in unchecked:
     check(not (ROOT / component).exists(),
           f"{component}: not yet covered by check-package.py; add its client checks first")

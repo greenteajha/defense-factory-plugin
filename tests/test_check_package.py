@@ -227,10 +227,42 @@ class PackageCheckTest(unittest.TestCase):
         (self.root / "hooks").mkdir()
         folder = add_skill(self.root)
         (folder / "agents").mkdir()
-        (folder / "agents" / "openai.yaml").write_text("interface: {}\n")
+        (folder / "agents" / "claude.yaml").write_text("x: 1\n")
         result = self.run_check()
         self.assertIn("hooks: not yet covered", result.stderr)
-        self.assertIn("agents/openai.yaml: not yet covered", result.stderr)
+        self.assertIn("agents/claude.yaml: not yet covered", result.stderr)
+
+    # Codex per-skill agents/openai.yaml ------------------------------------------------------
+
+    def write_openai_yaml(self, text):
+        folder = add_skill(self.root)
+        (folder / "agents").mkdir()
+        (folder / "agents" / "openai.yaml").write_text(text)
+
+    def test_openai_yaml_valid(self):
+        self.write_openai_yaml('interface:\n  display_name: "Good"\n  short_description: "Does good things"\n'
+                               '  default_prompt: "Use $good-skill to do it."\npolicy:\n  allow_implicit_invocation: true\n')
+        self.assert_passes()
+
+    def test_openai_yaml_prompt_must_name_skill(self):
+        self.write_openai_yaml('interface:\n  default_prompt: "Do it."\n')
+        self.assert_fails("default_prompt must mention $good-skill")
+
+    def test_openai_yaml_display_name_limit(self):
+        self.write_openai_yaml(f'interface:\n  display_name: "{"x" * 65}"\n')
+        self.assert_fails("interface.display_name must be 1-64 characters")
+
+    def test_openai_yaml_unquoted_value(self):
+        self.write_openai_yaml("interface:\n  display_name: Good\n")
+        self.assert_fails("quote string values")
+
+    def test_openai_yaml_unchecked_section(self):
+        self.write_openai_yaml('dependencies:\n  tools: "x"\n')
+        self.assert_fails("'dependencies' not yet covered")
+
+    def test_openai_yaml_missing_icon(self):
+        self.write_openai_yaml('interface:\n  icon_small: "./assets/icon.png"\n')
+        self.assert_fails("interface.icon_small must be an existing ./assets/ file")
 
 
 if __name__ == "__main__":

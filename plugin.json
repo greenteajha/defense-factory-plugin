@@ -14,7 +14,8 @@
       "interface": {
         "displayName": "Defense Factory",
         "shortDescription": "Evidence-led application security workflows",
-        "longDescription": "Guides authorized, evidence-led application security work across threat modeling, candidate discovery, isolated validation, patch preparation, human review, and revalidation. This 0.1.0 candidate is a package shell; no workflow stage is implemented yet.",
+        "defaultPrompt": ["Build a threat model of this repository."],
+        "longDescription": "Guides authorized, evidence-led application security work across threat modeling, candidate discovery, isolated validation, patch preparation, human review, and revalidation. The 0.1.0 candidate implements stage 1, the threat-model skill; later stages are in design.",
         "developerName": "Jeremy Teo",
         "category": "Productivity",
         "capabilities": ["Read"],

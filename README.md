@@ -1,19 +1,21 @@
 # Defense Factory Plugin
 
-An early, provider-neutral application security plugin inspired by [OpenAI's Defense Factory](https://openai.com/the-defense-factory/). The current candidate is a package shell: portable manifests, client adapters, and [contracts for a six-stage workflow](docs/workflow-contracts.md) that future skills will implement. It is an independent project, not an OpenAI product or an implementation of OpenAI's full Defense Factory.
+An early, provider-neutral application security plugin inspired by [OpenAI's Defense Factory](https://openai.com/the-defense-factory/). The current candidate implements stage 1 of a [six-stage workflow](docs/workflow-contracts.md), the `threat-model` skill, with portable manifests and client adapters for Claude Code, ChatGPT/Codex, and Cursor. It is an independent project, not an OpenAI product or an implementation of OpenAI's full Defense Factory.
 
 ## What is in the 0.1.0 candidate
 
-- `plugin.json` is the canonical Agent Plugins 1.0 manifest. `skills/` will hold shared behavior and is currently empty.
-- `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.agents/plugins/marketplace.json` are thin packaging adapters. Cursor uses the root manifest. No skill, MCP server, credentials, scanner, patch automation, or production integration is bundled.
-- All six workflow stages are specified in `docs/workflow-contracts.md` and are **not yet implemented**.
+- `plugin.json` is the canonical Agent Plugins 1.0 manifest. `skills/` holds the shared skills.
+- `skills/threat-model` builds, reuses, or revises an evidence-backed threat model of an authorized repository (stage 1). It confirms authorization before reading source, works read-only and offline, and saves output to a self-ignoring `.defense-factory/` folder. Its helpers need Python 3.9 or later. [docs/threat-model-parity.md](docs/threat-model-parity.md) maps it against the Codex Security threat-model skill.
+- `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.agents/plugins/marketplace.json` are thin packaging adapters. Cursor uses the root manifest. No MCP server, credentials, scanner, patch automation, or production integration is bundled.
+- Stages 2 to 6 are specified in `docs/workflow-contracts.md` and are **not yet implemented**.
 
 ## Layout
 
 ```text
 plugin.json                         portable identity and metadata
-skills/                             shared skills (empty)
+skills/threat-model/                stage 1 skill: SKILL.md, references, template, helper scripts, evals
 docs/workflow-contracts.md          stage handoff and evidence contracts
+docs/threat-model-parity.md         capability map against Codex Security's threat-model skill
 .claude-plugin/plugin.json          Claude Code metadata adapter
 .claude-plugin/marketplace.json     Claude Code marketplace catalog
 .agents/plugins/marketplace.json    local ChatGPT/Codex catalog
@@ -32,11 +34,11 @@ tests/                              regression tests for the package check
 
 The target client must support plugins and skills. A GitHub download by itself does not activate any skill. ChatGPT web/workspace distribution and Claude or Cursor marketplace publication are separate review and installation paths; this candidate does not claim those routes. Repository and execution access come from the host, not this package.
 
-Installing this candidate adds no agent behavior yet. Skills for each workflow stage will be added under `skills/` as they are implemented.
+Installing this candidate adds the `threat-model` skill. Ask for a threat model of an authorized repository, or invoke the skill by name. Skills for later stages will be added under `skills/` as they are implemented.
 
 ## Data and permissions
 
-Future skills will read the repository through whichever access the host provides. Local source or excerpts may be sent to that host's model service during use; check its data handling settings before assessing sensitive code. The package contains no telemetry, network endpoint, secret, or bundled MCP connection. Keep findings and reproduction details in approved private storage. Ask for authorization before scanning; use isolated temporary environments for later validation; require human review before merge. Host and repository permissions enforce these boundaries; prompt text alone cannot.
+Skills read the repository through whichever access the host provides. The threat-model skill writes its output to `.defense-factory/` in the repository, which ignores itself in Git; the folder still travels in archives, container build contexts, and synced folders, and it is sensitive. Local source or excerpts may be sent to that host's model service during use; check its data handling settings before assessing sensitive code. The package contains no telemetry, network endpoint, secret, or bundled MCP connection. Keep findings and reproduction details in approved private storage. Ask for authorization before scanning; use isolated temporary environments for later validation; require human review before merge. Host and repository permissions enforce these boundaries; prompt text alone cannot.
 
 ## Versioning and contribution
 

@@ -1,0 +1,16 @@
+{
+  "name": "defense-factory",
+  "owner": {
+    "name": "Jeremy Teo"
+  },
+  "metadata": {
+    "description": "Defense Factory: evidence-led application security workflows."
+  },
+  "plugins": [
+    {
+      "name": "defense-factory-plugin",
+      "source": "./",
+      "description": "Evidence-led application security workflows for authorized repositories."
+    }
+  ]
+}

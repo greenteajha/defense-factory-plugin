@@ -5,7 +5,7 @@ An early, provider-neutral application security plugin inspired by [OpenAI's Def
 ## What is in the 0.1.0 candidate
 
 - `plugin.json` is the canonical Agent Plugins 1.0 manifest. `skills/` will hold shared behavior and is currently empty.
-- `.claude-plugin/plugin.json` and `.agents/plugins/marketplace.json` are thin packaging adapters. Cursor uses the root manifest. No skill, MCP server, credentials, scanner, patch automation, or production integration is bundled.
+- `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.agents/plugins/marketplace.json` are thin packaging adapters. Cursor uses the root manifest. No skill, MCP server, credentials, scanner, patch automation, or production integration is bundled.
 - All six workflow stages are specified in `docs/workflow-contracts.md` and are **not yet implemented**.
 
 ## Layout
@@ -15,6 +15,7 @@ plugin.json                         portable identity and metadata
 skills/                             shared skills (empty)
 docs/workflow-contracts.md          stage handoff and evidence contracts
 .claude-plugin/plugin.json          Claude Code metadata adapter
+.claude-plugin/marketplace.json     Claude Code marketplace catalog
 .agents/plugins/marketplace.json    local ChatGPT/Codex catalog
 scripts/check-package.py            packaging checks
 ```
@@ -23,7 +24,7 @@ scripts/check-package.py            packaging checks
 
 | Client surface | Route | Status for this candidate |
 | --- | --- | --- |
-| Claude Code | Clone/download the repository and run `claude --plugin-dir /absolute/path/to/defense-factory-plugin`. | Package layout prepared; live client activation still needs a smoke test. |
+| Claude Code | Add the repository as a marketplace with `/plugin marketplace add greenteajha/defense-factory-plugin`, then `/plugin install defense-factory-plugin@defense-factory`. For local use, clone the repository and run `claude --plugin-dir /absolute/path/to/defense-factory-plugin`. | Catalog validated and installs from a local marketplace; live skill activation still needs a smoke test. |
 | ChatGPT desktop / Codex local | Add the repository as a plugin marketplace with `codex plugin marketplace add greenteajha/defense-factory-plugin`, then install and enable **Defense Factory** in the Plugins Directory. The included local catalog points to this repository root. | Catalog prepared; live client activation still needs a smoke test. |
 | Cursor plugin client | Clone/download the repository and import its root `plugin.json` using Cursor's plugin flow. Marketplace publication is separate. | Standard package prepared; live client activation still needs a smoke test. |
 
@@ -41,5 +42,5 @@ Future skills will read the repository through whichever access the host provide
 
 ## Sources
 
-- [Defense Factory Project](https://app.notion.com/p/3e46cc31d3d581c48283de3a000039d1) and [Agent plugins: cross-provider gold standard](https://app.notion.com/p/3e46cc31d3d581b1a718f102349aefa3) informed the architecture.
+- [Defense Factory Project](https://app.notion.com/p/3e46cc31d3d581c48283de3a000039d1) and [Agent plugins guidelines](https://app.notion.com/p/3e46cc31d3d581b1a718f102349aefa3) informed the architecture.
 - [Agent Plugins manifest](https://agent-plugins.org/plugin-authors/manifest), [skills layout](https://agent-plugins.org/plugin-authors/skills), [OpenAI plugin packaging](https://developers.openai.com/plugins/build/plugins), [Claude Code plugins](https://code.claude.com/docs/en/plugins), and [Cursor plugins](https://cursor.com/docs/reference/plugins) describe current client packaging.

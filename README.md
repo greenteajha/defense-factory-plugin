@@ -17,7 +17,9 @@ docs/workflow-contracts.md          stage handoff and evidence contracts
 .claude-plugin/plugin.json          Claude Code metadata adapter
 .claude-plugin/marketplace.json     Claude Code marketplace catalog
 .agents/plugins/marketplace.json    local ChatGPT/Codex catalog
-scripts/check-package.py            packaging checks
+scripts/check-package.py            offline package checks for the core and each client
+scripts/schemas/                    vendored Agent Plugins 1.0.0 schemas (Apache-2.0)
+tests/                              regression tests for the package check
 ```
 
 ## Install and use
@@ -38,7 +40,7 @@ Future skills will read the repository through whichever access the host provide
 
 ## Versioning and contribution
 
-`plugin.json` is the single version source. The current `0.1.0` is a candidate until client smoke tests and a matching Git tag are completed. Releases use Semantic Versioning and matching `vX.Y.Z` Git tags, with checks and a client smoke-test matrix described in [RELEASING.md](RELEASING.md). See [CHANGELOG.md](CHANGELOG.md) for changes and [SECURITY.md](SECURITY.md) for reporting sensitive issues. The code and documentation are [MIT licensed](LICENSE).
+`plugin.json` is the single version source. The current `0.1.0` is a candidate until client smoke tests and a matching Git tag are completed. Before proposing a change, run `python3 scripts/check-package.py` and `python3 -m unittest discover -s tests`. The package check validates the manifest against the Agent Plugins schema and reproduces the load rules Claude Code, ChatGPT/Codex, and Cursor document or implement; it blocks components (hooks, `.cursor-plugin`, skill `agents/openai.yaml`) until checks exist for them. It approximates client acceptance and does not replace live smoke tests. Releases use Semantic Versioning and matching `vX.Y.Z` Git tags, with checks and a client smoke-test matrix described in [RELEASING.md](RELEASING.md). See [CHANGELOG.md](CHANGELOG.md) for changes and [SECURITY.md](SECURITY.md) for reporting sensitive issues. The code and documentation are [MIT licensed](LICENSE).
 
 ## Sources
 

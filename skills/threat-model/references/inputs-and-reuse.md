@@ -32,11 +32,15 @@ If a repository `SECURITY.md` or `AGENTS.md` already describes the threat model 
 The reusable model lives at `.defense-factory/threat-model.md` in the repository (or the location the user chose for this repository). Read it for reuse only when **all** of these hold:
 
 - its header `target_id` and `version` exactly match the output of `scripts/target_identity.py` for the current target;
+- its header `skill_version` exactly matches the one `scripts/prepare_workspace.py` printed for this run (a model made by an older or different version of this skill is never reused, and a model without `skill_version` is never reused);
+- it passes `scripts/check_model.py`;
 - its header `scope` is the whole repository, and the user asked for the whole repository;
 - the user has not supplied a model, supplied non-empty user context or a knowledge base, narrowed the scope, or asked to generate, regenerate, or revise the model;
 - no host or calling-workflow instruction says to bypass stored models.
 
-On a match, copy it unchanged into the stage folder and change only these header fields: `source: reused`, `reused_from` (the stored model's `run_id`), and this run's `run_id`, `timestamp`, and `authorization`. Also write this run's `security-guidance.md` (SKILL.md workflow step 4) so the run folder is complete. Tell the user the stored model was reused because the code is unchanged, and that asking to regenerate produces a fresh one. A mismatched version means the code changed: generate a new model (section 4).
+Never amend a reused model. If it would need any change beyond the header fields below, generate a new model instead (section 4).
+
+On a match, copy it unchanged into the stage folder and change only these header fields: `source: reused`, `reused_from` (the stored model's `run_id`), and this run's `run_id`, `timestamp`, `authorization`, `actor`, and `model`. Also write this run's `security-guidance.md` (SKILL.md workflow step 4) so the run folder is complete. Tell the user the stored model was reused because the code is unchanged, and that asking to regenerate produces a fresh one. A mismatched version means the code changed: generate a new model (section 4).
 
 ## 4. Generate a new model
 

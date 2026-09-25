@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Check every `path:line` and `path:start-end` citation in a Markdown file against the repository.
 
-A citation is a backtick span containing a repository-relative path, a colon, and a line number
-or range. Network addresses such as `127.0.0.1:8080`, `0.0.0.0:80`, `[::1]:443`, and `localhost:3000`
+A citation is a backtick span containing a repository-relative path, a colon, and a line number,
+range, or comma-separated list of them (`path:12`, `path:12-30`, `path:12-30,41,50-52`); each
+part of a list is checked separately. Network addresses such as `127.0.0.1:8080`, `0.0.0.0:80`, `[::1]:443`, and `localhost:3000`
 are not citations and are skipped. Each is checked to be relative, inside the repository, an existing regular file, and
 within the file's line count. Only existence is checked; whether the lines support the claim
 still needs a human or agent reading.
@@ -18,7 +19,7 @@ import re
 import sys
 from pathlib import Path
 
-CITATION = re.compile(r"`([^`\s:]+(?:/[^`\s:]+)*):(\d+)(?:-(\d+))?`")
+CITATION = re.compile(r"`([^`\s:]+(?:/[^`\s:]+)*):(\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)`")
 NETWORK_HOST = re.compile(r"(?:\d{1,3}(?:\.\d{1,3}){3}|localhost|\[[0-9A-Fa-f:.]*\])", re.IGNORECASE)
 
 
@@ -61,17 +62,18 @@ def main():
 
     seen, invalid = set(), []
     for match in CITATION.finditer(document.read_text(encoding="utf-8", errors="replace")):
-        raw_path, start = match.group(1), int(match.group(2))
+        raw_path = match.group(1)
         if NETWORK_HOST.fullmatch(raw_path):
             continue
-        end = int(match.group(3) or start)
-        citation = match.group(0).strip("`")
-        if citation in seen:
-            continue
-        seen.add(citation)
-        problem = problem_with(repo, raw_path, start, end)
-        if problem:
-            invalid.append({"citation": citation, "problem": problem})
+        for part in match.group(2).split(","):
+            start, _, end = part.partition("-")
+            citation = f"{raw_path}:{part}"
+            if citation in seen:
+                continue
+            seen.add(citation)
+            problem = problem_with(repo, raw_path, int(start), int(end or start))
+            if problem:
+                invalid.append({"citation": citation, "problem": problem})
 
     print(json.dumps({"checked": len(seen), "valid": len(seen) - len(invalid), "invalid": invalid}, indent=2))
     return 1 if invalid else 0

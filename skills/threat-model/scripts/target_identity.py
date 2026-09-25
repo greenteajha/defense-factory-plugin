@@ -9,6 +9,7 @@ Prints one JSON object:
   repository_root  absolute path of the Git top level, or of --root
   revision         HEAD commit, or null
   dirty            whether in-scope files differ from HEAD
+                   (operating-system metadata such as .DS_Store is ignored everywhere)
   snapshot_digest  digest of in-scope file contents when not a clean checkout, else null
   version          revision for git_revision, otherwise snapshot_digest
   scope            in-scope paths relative to repository_root, or ["."]
@@ -29,6 +30,16 @@ from urllib.parse import urlsplit
 
 SNAPSHOT_PREFIX = "defense-factory-snapshot/v1:sha256:"
 SKIP_DIRS = {".git", ".defense-factory"}
+# Files the operating system creates when a folder is browsed; they are never part of the target.
+OS_METADATA_FILES = {".DS_Store", "Thumbs.db", "desktop.ini", "Icon\r"}
+OS_METADATA_DIRS = {".Spotlight-V100", ".Trashes", ".fseventsd", ".TemporaryItems"}
+
+
+def is_os_metadata(relative):
+    parts = relative.split("/")
+    name = parts[-1]
+    return (name in OS_METADATA_FILES or name.startswith("._")
+            or any(part in OS_METADATA_DIRS for part in parts))
 
 
 def git(root, *args):
@@ -69,7 +80,7 @@ def inventory(root, scope, in_git):
     if in_git:
         listed = git(root, "ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", *scope)
         paths = {p for p in (listed or "").split("\0") if p}
-        return sorted(p for p in paths if p.split("/", 1)[0] not in SKIP_DIRS)
+        return sorted(p for p in paths if p.split("/", 1)[0] not in SKIP_DIRS and not is_os_metadata(p))
     found = []
     for item in scope:
         base = root / item
@@ -80,7 +91,25 @@ def inventory(root, scope, in_git):
             dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
             for name in files:
                 found.append((Path(current) / name).relative_to(root).as_posix())
-    return sorted(set(found))
+    return sorted(p for p in set(found) if not is_os_metadata(p))
+
+
+def changed_paths(root, scope):
+    """Paths Git reports as changed or untracked in scope, ignoring operating-system metadata."""
+    result = subprocess.run(["git", "-C", str(root), "status", "--porcelain", "-z", "--untracked-files=all",
+                             "--", *scope], capture_output=True, text=True)
+    entries, changed = result.stdout.split("\0"), []
+    index = 0
+    while index < len(entries):
+        entry = entries[index]
+        index += 1
+        if len(entry) < 4:
+            continue
+        if entry[0] in "RC":  # renames and copies are followed by their original path
+            index += 1
+        if not is_os_metadata(entry[3:]):
+            changed.append(entry[3:])
+    return changed
 
 
 def snapshot_digest(root, paths):
@@ -123,7 +152,7 @@ def main():
     target_id = "sha256:" + hashlib.sha256(identity.encode()).hexdigest()
 
     revision = git(root, "rev-parse", "--verify", "-q", "HEAD") if in_git else None
-    dirty = bool(git(root, "status", "--porcelain", "--untracked-files=normal", "--", *scope)) if in_git else None
+    dirty = bool(changed_paths(root, scope)) if in_git else None
     clean_revision = in_git and revision and not dirty
     digest = None if clean_revision else snapshot_digest(root, inventory(root, scope, in_git))
 

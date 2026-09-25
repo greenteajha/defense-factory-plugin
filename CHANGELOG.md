@@ -18,5 +18,6 @@ All notable changes are recorded here. Versions follow [Semantic Versioning](htt
 - Documented capability parity with the Codex Security threat-model skill in `docs/threat-model-parity.md`.
 - Added `agents/openai.yaml` checks to the package check and set the Codex `defaultPrompt`.
 - Tightened the threat-model gate and storage rules after the first live test: explicit authorization statements only, user-chosen output locations only, every trust boundary accounted for.
+- Threat-model skill hardening from cross-client comparison runs: `.DS_Store` and other OS metadata no longer change a target's version; reuse requires a matching `skill_version` fingerprint and a model that passes the new `scripts/check_model.py`, and reused models are never amended; records name the exact `model`; hypotheses carry a confidence rating; `check_citations.py` checks comma-separated line lists.
 - Documented release packages for ChatGPT upload (plugin-only, never `.agents/`), Claude Code, Cursor, and each skill. They are built by a separate plugin packager kept outside this repository.
 - Documented the ChatGPT Upload plugin archive and Add a marketplace routes and corrected the Cursor install route (`~/.cursor/plugins/local/`).

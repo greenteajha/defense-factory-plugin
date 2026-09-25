@@ -44,6 +44,8 @@ For each important boundary, establish:
 
 **STRIDE checklist.** After deriving scenarios from each boundary, check that boundary against spoofing, tampering, repudiation, information disclosure, denial of service, and elevation of privilege. Add a scenario only where the evidence supports one; the checklist catches omissions and does not create a quota.
 
+**Rate confidence separately from priority.** For each hypothesis, give High, Medium, or Low confidence with a short reason: High when source evidence directly shows the weakness and its reachability, Medium when a key prerequisite is inferred, Low when it rests on unverified behaviour such as third-party code or deployment choices. Confidence never lowers priority: an unproven high-impact scenario stays high priority with low confidence.
+
 **Prioritize** by plausible impact and reachability. Do not assume the attacker already controls the operator account, trusted configuration, private state, or privileged release infrastructure. A caller-controlled input to a library or parser can be a real boundary without proof of a production deployment; a deployment-specific claim must state the exposure it needs. Do not invent remote access, tenants, missing controls, accepted risks, or owner approval. Ordinary authorized behavior, effects limited to the actor themselves, and control the attacker already has are not new security impact.
 
 **Account for every material boundary**, including conditional privileged workflows: each boundary listed in section 2 of the document gets a hypothesis, an explanation of the control that prevents new capability, or an open question. Keep distinct controls separate. Use concrete, repository-specific scenarios; there is no fixed number.

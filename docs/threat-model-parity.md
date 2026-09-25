@@ -42,6 +42,10 @@ This table was compiled from codex-security `main` on 2026-09-24. Recheck it whe
 - A stage record header shared with later stages (status, actor, provenance, coverage gaps, next action).
 - A STRIDE omission check per boundary.
 - Explicit `blocked` and `inconclusive` outcomes, and a manual fallback when Python is unavailable.
+- A per-hypothesis confidence rating, kept separate from priority.
+- `scripts/check_model.py`: header fields, hypothesis and open-question counts, IDs, confidence values, and required sections are checked before saving.
+- Reuse is limited to models made by the same skill version (`skill_version`), and the exact model that wrote a record is recorded (`model`).
+- Operating-system metadata such as `.DS_Store` never changes a target's version.
 - Activation and behavior test cases in `evals/cases.json`.
 
 ## Codex-specific mechanisms replaced, not dropped

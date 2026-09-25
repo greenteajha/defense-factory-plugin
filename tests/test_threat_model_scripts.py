@@ -183,3 +183,162 @@ class CheckCitationsTest(ScriptTest):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OsMetadataTest(ScriptTest):
+    def add_finder_files(self):
+        (self.root / ".DS_Store").write_bytes(b"\0finder")
+        (self.root / "src" / "._server.py").write_bytes(b"\0appledouble")
+
+    def test_plain_folder_digest_ignores_finder_files(self):
+        before = self.identity()["version"]
+        self.add_finder_files()
+        self.assertEqual(self.identity()["version"], before)
+
+    @unittest.skipUnless(HAS_GIT, "git not installed")
+    def test_git_checkout_stays_clean_with_finder_files(self):
+        self.init_git()
+        self.add_finder_files()
+        data = self.identity()
+        self.assertEqual(data["target_kind"], "git_revision")
+        self.assertFalse(data["dirty"])
+
+    @unittest.skipUnless(HAS_GIT, "git not installed")
+    def test_real_changes_still_count(self):
+        self.init_git()
+        self.add_finder_files()
+        (self.root / "src" / "api" / "server.py").write_text("changed\n")
+        self.assertEqual(self.identity()["target_kind"], "git_worktree")
+
+
+class SkillVersionTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.skill = Path(self.tmp.name) / "threat-model"
+        shutil.copytree(SCRIPTS.parent, self.skill, ignore=shutil.ignore_patterns("__pycache__", ".DS_Store"))
+        self.out = Path(self.tmp.name) / "out"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def version(self, run_id):
+        result = subprocess.run([sys.executable, str(self.skill / "scripts" / "prepare_workspace.py"),
+                                 "--root", self.tmp.name, "--out-dir", str(self.out), "--run-id", run_id],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return json.loads(result.stdout)["skill_version"]
+
+    def test_stable_until_the_skill_changes(self):
+        first = self.version("r1")
+        self.assertRegex(first, r"^threat-model/sha256:[0-9a-f]{16}$")
+        self.assertEqual(self.version("r2"), first)
+        (self.skill / "evals" / "cases.json").write_text("{}\n")  # test cases do not change behaviour
+        self.assertEqual(self.version("r3"), first)
+        with (self.skill / "references" / "method.md").open("a") as handle:
+            handle.write("\nA new rule.\n")
+        self.assertNotEqual(self.version("r4"), first)
+
+
+VALID_MODEL = """---
+record_version: 1
+stage: 1-threat-model
+status: complete
+run_id: "r1"
+timestamp: "2026-09-25T00:00:00Z"
+actor: "Test agent"
+model: "Example Model 1.0"
+skill_version: "threat-model/sha256:0123456789abcdef"
+target_id: "sha256:abc"
+target_kind: "git_revision"
+version: "abc"
+revision: "abc"
+scope: whole-repository
+authorization: "user stated in session: \\"I'm authorized\\""
+output_location: "default .defense-factory (Git-ignored)"
+source: generated
+inputs: []
+independent_review: independent
+tools: "Python 3.9"
+evidence: "citations in this file"
+assumptions:
+  - "Runs locally."
+coverage_gaps: []
+open_questions: 2
+hypotheses: {critical: 0, high: 1, medium: 1, low: 0}
+next_action: "Stage 2."
+---
+
+# Threat model: demo
+
+## 1. Overview
+Text.
+## 2. Threat model, trust boundaries, and assumptions
+Text.
+## 3. Attack surface, mitigations, and attacker stories
+
+| ID | Priority | Confidence | Scenario and capability gain | Evidence |
+| --- | --- | --- | --- | --- |
+| TM-H1 | High (conditional) | Medium: inferred prerequisite | A | `src/api/server.py:1` |
+| TM-H2 | Medium | Low | B | `src/api/server.py:2` |
+
+## 4. Severity calibration
+Text.
+## Canonical summary
+Text.
+## Coverage gaps
+- None.
+## Open questions
+1. First?
+2. Second?
+"""
+
+
+class CheckModelTest(ScriptTest):
+    def check(self, text):
+        document = Path(self.tmp.name) / "model.md"
+        document.write_text(text)
+        result = run("check_model.py", str(document))
+        return result.returncode, json.loads(result.stdout)["problems"]
+
+    def test_valid_model_passes(self):
+        self.assertEqual(self.check(VALID_MODEL), (0, []))
+
+    def test_hypothesis_count_mismatch(self):
+        code, problems = self.check(VALID_MODEL.replace("high: 1, medium: 1", "high: 1, medium: 2"))
+        self.assertEqual(code, 1)
+        self.assertIn("header says 2 medium hypotheses but the table has 1", problems)
+
+    def test_open_question_count_mismatch(self):
+        code, problems = self.check(VALID_MODEL.replace("open_questions: 2", "open_questions: 3"))
+        self.assertIn("header says 3 open questions but the list has 2", problems)
+
+    def test_model_is_required(self):
+        code, problems = self.check(VALID_MODEL.replace('model: "Example Model 1.0"\n', ""))
+        self.assertIn("header field 'model' is missing or empty", problems)
+
+    def test_confidence_column_is_required(self):
+        text = VALID_MODEL.replace("| Priority | Confidence |", "| Priority | Notes |")
+        code, problems = self.check(text)
+        self.assertIn("hypotheses table has no Confidence column", problems)
+
+    def test_confidence_values(self):
+        code, problems = self.check(VALID_MODEL.replace("| Low | B |", "| Certain | B |"))
+        self.assertIn("TM-H2: confidence must be High, Medium, or Low", problems)
+
+    def test_duplicate_ids_and_placeholders(self):
+        text = VALID_MODEL.replace("| TM-H2 |", "| TM-H1 |").replace('"Test agent"', '"<agent>"')
+        code, problems = self.check(text)
+        self.assertIn("duplicate hypothesis ID TM-H1", problems)
+        self.assertIn("header field 'actor' still holds a template placeholder", problems)
+
+    def test_blocked_record_needs_only_a_header(self):
+        header = VALID_MODEL.split("# Threat model")[0].replace("status: complete", "status: blocked")
+        self.assertEqual(self.check(header), (0, []))
+
+
+class CommaCitationTest(CheckCitationsTest):
+    def test_comma_lists_are_checked_part_by_part(self):
+        code, data = self.check("See `src/api/server.py:1-2,3` and `src/api/server.py:2,9`.")
+        self.assertEqual(code, 1)
+        self.assertEqual(data["checked"], 4)
+        self.assertEqual([item["citation"] for item in data["invalid"]], ["src/api/server.py:9"])

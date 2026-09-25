@@ -12,6 +12,8 @@ Every Defense Factory stage output starts with a YAML header, the stage record, 
 | `run_id` | yes | Identifier of this run; the name of the run folder. |
 | `timestamp` | yes | When the record was written, in UTC ISO 8601 (for example `2026-09-24T07:15:00Z`). Take it from `prepare_workspace.py` or the system clock; never estimate it. |
 | `actor` | yes | Who performed the stage: the agent and client (for example "Claude Code agent") and the requesting user if known. |
+| `model` | yes | The exact model and version the client reports for this session (for example `Claude Opus 5.5`), not just the vendor. Write `unknown` if the client does not say; never guess. |
+| `skill_version` | yes | The `skill_version` printed by `prepare_workspace.py`: a fingerprint of the skill's instructions, template, and scripts. Reuse depends on it. |
 | `target_id` | yes | Stable target identity from `target_identity.py`. |
 | `target_kind` | yes | `git_revision`, `git_worktree`, or `directory_snapshot`. |
 | `version` | yes | Commit for a clean Git checkout; snapshot digest otherwise. |

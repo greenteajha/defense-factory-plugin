@@ -5,6 +5,8 @@ status: complete            # complete | inconclusive | blocked
 run_id: "<run id>"
 timestamp: "<UTC ISO 8601>"
 actor: "<agent and client; requesting user if known>"
+model: "<exact model and version the client reports, e.g. Claude Opus 5.5; or unknown>"
+skill_version: "<skill_version printed by prepare_workspace.py>"
 target_id: "<from target_identity.py>"
 target_kind: "<git_revision | git_worktree | directory_snapshot>"
 version: "<commit, or snapshot digest>"
@@ -57,9 +59,9 @@ next_action: "Stage 2: candidate discovery, starting from the highest-priority h
 
 All rows are hypotheses unless marked otherwise by a later stage.
 
-| ID | Priority | Scenario and capability gain | Prerequisites | Impact | Existing controls | Mitigation | Evidence | STRIDE |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TM-H1 | High | | | | | | `path:line` | |
+| ID | Priority | Confidence | Scenario and capability gain | Prerequisites | Impact | Existing controls | Mitigation | Evidence | STRIDE |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| TM-H1 | High | Medium: <why> | | | | | | `path:line` | |
 
 Boundaries with no hypothesis, and why no new capability exists:
 

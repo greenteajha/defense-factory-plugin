@@ -6,7 +6,8 @@ the folder and everything in it, then runs/<run-id>/<stage>/ inside it.
 With --out-dir: use that folder instead (the user's chosen location).
 
 Prints one JSON object: base_dir, run_dir, stage_dir, reusable_model, run_id, timestamp (current
-UTC time for the record header), git_ignored.
+UTC time for the record header), skill_version (fingerprint of this skill's instructions, template,
+and scripts; a stored model may be reused only when its skill_version matches), git_ignored.
 
 Exit codes:
   0  ready to write
@@ -17,6 +18,7 @@ Standard library only; Python 3.9+. Writes only inside the output folder.
 """
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -25,6 +27,20 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 IGNORE_ALL = "# Created by the Defense Factory plugin. Ignore this folder entirely.\n*\n"
+SKILL_DIR = Path(__file__).resolve().parents[1]
+UNVERSIONED = {"evals", "__pycache__"}  # test cases and caches do not change the skill's behaviour
+
+
+def skill_version():
+    """Content fingerprint of the skill: changes whenever its instructions, template, or scripts change."""
+    digest = hashlib.sha256()
+    for path in sorted(SKILL_DIR.rglob("*")):
+        relative = path.relative_to(SKILL_DIR)
+        if (not path.is_file() or relative.parts[0] in UNVERSIONED or path.suffix == ".pyc"
+                or path.name.startswith(".")):
+            continue
+        digest.update(f"{relative.as_posix()}\0".encode() + path.read_bytes() + b"\0")
+    return f"{SKILL_DIR.name}/sha256:{digest.hexdigest()[:16]}"
 
 
 def git(root, *args):
@@ -92,6 +108,7 @@ def main():
         "reusable_model": str(base / "threat-model.md"),
         "run_id": run_id,
         "timestamp": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "skill_version": skill_version(),
         "git_ignored": ignored,
     }, indent=2))
 

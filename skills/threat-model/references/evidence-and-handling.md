@@ -2,7 +2,7 @@
 
 ## Citations
 
-- Cite repository locations as `` `path:line` `` or `` `path:start-end` `` in backticks, with the path relative to the repository root. Resolve paths from the root, not from the current directory.
+- Cite repository locations as `` `path:line` ``, `` `path:start-end` ``, or a comma-separated list such as `` `path:10-16,40-52` `` in backticks, with the path relative to the repository root. Resolve paths from the root, not from the current directory.
 - A citation must support the specific claim beside it. Naming a file that merely exists is not evidence.
 - Before saving, run `scripts/check_citations.py` on the output and correct or remove every citation it reports as missing, outside the repository, or beyond the end of the file. Then spot-check that the cited lines say what the claim says.
 - Facts that do not come from the code carry an origin label instead: "per user context", "per knowledge base", "per SECURITY.md policy", or "per documentation", the last with a file citation.

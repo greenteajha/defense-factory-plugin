@@ -1,8 +1,8 @@
 # Defense Factory Plugin
 
-An early, provider-neutral application security plugin inspired by [OpenAI's Defense Factory](https://openai.com/the-defense-factory/). The current candidate implements stage 1 of a [six-stage workflow](docs/workflow-contracts.md), the `threat-model` skill, with portable manifests and client adapters for Claude Code, ChatGPT/Codex, and Cursor. It is an independent project, not an OpenAI product or an implementation of OpenAI's full Defense Factory.
+An early, provider-neutral application security plugin inspired by [OpenAI's Defense Factory](https://openai.com/the-defense-factory/). Version 0.2.0 implements stage 1 of a [six-stage workflow](docs/workflow-contracts.md), the `threat-model` skill, with portable manifests and client adapters for Claude Code, ChatGPT/Codex, and Cursor. It is an independent project, not an OpenAI product or an implementation of OpenAI's full Defense Factory.
 
-## What is in the 0.1.0 candidate
+## What is in 0.2.0
 
 - `plugin.json` is the canonical Agent Plugins 1.0 manifest. `skills/` holds the shared skills.
 - `skills/threat-model` builds, reuses, or revises an evidence-backed threat model of an authorized repository (stage 1). It confirms authorization before reading source, works read-only and offline, and saves output to a self-ignoring `.defense-factory/` folder. Its helpers need Python 3.9 or later. [docs/threat-model-parity.md](docs/threat-model-parity.md) maps it against the Codex Security threat-model skill.
@@ -26,16 +26,16 @@ tests/                              regression tests for the package check
 
 ## Install and use
 
-| Client surface | Route | Status for this candidate |
+| Client surface | Route | Status for 0.2.0 |
 | --- | --- | --- |
-| Claude Code | Add the repository as a marketplace with `/plugin marketplace add greenteajha/defense-factory-plugin`, then `/plugin install defense-factory-plugin@defense-factory`. For local use, clone the repository and run `claude --plugin-dir /absolute/path/to/defense-factory-plugin`, or unzip the `-claude-` package and point `--plugin-dir` at it. Invoke with `/defense-factory-plugin:threat-model`. | Skill activation and a full threat-model run confirmed in a live test with `--plugin-dir`. |
-| ChatGPT desktop / Codex (upload) | In Plugins, choose **Add**, then **Upload plugin archive**, and select the `-chatgpt-` package. Do not upload the repository itself: the uploader rejects archives that contain `.agents/plugins/marketplace.json`. | Upload of the plugin-only package confirmed; skill activation not yet tested. |
+| Claude Code | Add the repository as a marketplace with `/plugin marketplace add greenteajha/defense-factory-plugin`, then `/plugin install defense-factory-plugin@defense-factory`. For local use, clone the repository and run `claude --plugin-dir /absolute/path/to/defense-factory-plugin`, or unzip the `-claude-` package and point `--plugin-dir` at it. Invoke with `/defense-factory-plugin:threat-model`. | Full threat-model runs confirmed with `--plugin-dir`. Marketplace install confirmed with a local catalog. |
+| ChatGPT desktop / Codex (upload) | In Plugins, choose **Add**, then **Upload plugin archive**, and select the `-chatgpt-` package. Do not upload the repository itself: the uploader rejects archives that contain `.agents/plugins/marketplace.json`. | Upload and full threat-model runs confirmed. |
 | ChatGPT desktop / Codex (marketplace) | In Plugins, choose **Add**, then **Add a marketplace**, with `greenteajha/defense-factory-plugin`; or run `codex plugin marketplace add greenteajha/defense-factory-plugin` and `codex plugin add defense-factory-plugin@defense-factory`. Uses `.agents/plugins/marketplace.json`. | Catalog prepared; not yet tested. |
-| Cursor | Unzip the `-cursor-` package (or copy the repository without `.git`) into `~/.cursor/plugins/local/defense-factory-plugin/`, then run **Developer: Reload Window**. Cursor ignores symlinks that point outside that folder. Marketplace publication is separate. | Not yet tested. |
+| Cursor | In **Customize**, add a plugin from **GitHub Repository** with `greenteajha/defense-factory-plugin`; Cursor reads `.claude-plugin/marketplace.json` and `.claude-plugin/plugin.json`. Offline: unzip the `-cursor-` package (or copy the repository without `.git`) into `~/.cursor/plugins/local/defense-factory-plugin/`, then run **Developer: Reload Window**; Cursor ignores symlinks that point outside that folder. Cursor Marketplace publication is separate. | Full threat-model runs confirmed. |
 
-The `-chatgpt-`, `-claude-`, and `-cursor-` packages are built outside this repository by a separate plugin packager and attached to GitHub Releases; see [RELEASING.md](RELEASING.md#packages). The target client must support plugins and skills. A GitHub download by itself does not activate any skill. ChatGPT web/workspace distribution and Claude or Cursor marketplace publication are separate review and installation paths; this candidate does not claim those routes. Repository and execution access come from the host, not this package.
+The `-chatgpt-`, `-claude-`, and `-cursor-` packages are built outside this repository by a separate plugin packager and attached to GitHub Releases; see [RELEASING.md](RELEASING.md#packages). The target client must support plugins and skills. A GitHub download by itself does not activate any skill. ChatGPT web/workspace distribution and Claude or Cursor marketplace publication are separate review and installation paths; this release does not claim those routes. Repository and execution access come from the host, not this package.
 
-Installing this candidate adds the `threat-model` skill. Ask for a threat model of an authorized repository, or invoke the skill by name. Skills for later stages will be added under `skills/` as they are implemented.
+Installing this release adds the `threat-model` skill. Ask for a threat model of an authorized repository, or invoke the skill by name. Skills for later stages will be added under `skills/` as they are implemented.
 
 ## Data and permissions
 
@@ -43,7 +43,7 @@ Skills read the repository through whichever access the host provides. The threa
 
 ## Versioning and contribution
 
-`plugin.json` is the single version source. The current `0.1.0` is a candidate until client smoke tests and a matching Git tag are completed. Before proposing a change, run `python3 scripts/check-package.py` and `python3 -m unittest discover -s tests`. The package check validates the manifest against the Agent Plugins schema and reproduces the load rules Claude Code, ChatGPT/Codex, and Cursor document or implement; it blocks components (hooks, `.cursor-plugin`, skill `agents/openai.yaml`) until checks exist for them. It approximates client acceptance and does not replace live smoke tests. Releases use Semantic Versioning and matching `vX.Y.Z` Git tags, with checks and a client smoke-test matrix described in [RELEASING.md](RELEASING.md). See [CHANGELOG.md](CHANGELOG.md) for changes and [SECURITY.md](SECURITY.md) for reporting sensitive issues. The code and documentation are [MIT licensed](LICENSE).
+`plugin.json` is the single version source. The current release is `0.2.0`, tagged `v0.2.0`. Before proposing a change, run `python3 scripts/check-package.py` and `python3 -m unittest discover -s tests`. The package check validates the manifest against the Agent Plugins schema and reproduces the load rules Claude Code, ChatGPT/Codex, and Cursor document or implement; it blocks components (hooks, `.cursor-plugin`, skill `agents/openai.yaml`) until checks exist for them. It approximates client acceptance and does not replace live smoke tests. Releases use Semantic Versioning and matching `vX.Y.Z` Git tags, with checks and a client smoke-test matrix described in [RELEASING.md](RELEASING.md). See [CHANGELOG.md](CHANGELOG.md) for changes and [SECURITY.md](SECURITY.md) for reporting sensitive issues. The code and documentation are [MIT licensed](LICENSE).
 
 ## Sources
 

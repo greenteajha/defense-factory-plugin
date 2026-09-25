@@ -159,7 +159,7 @@ class PackageCheckTest(unittest.TestCase):
     # Claude Code --------------------------------------------------------------------------
 
     def test_claude_manifest_version_drift(self):
-        edit_json(self.root, ".claude-plugin/plugin.json", lambda d: d.update(version="0.2.0"))
+        edit_json(self.root, ".claude-plugin/plugin.json", lambda d: d.update(version="99.0.0"))
         self.assert_fails(".claude-plugin/plugin.json: 'version' must match plugin.json")
 
     def test_claude_reserved_marketplace_name(self):

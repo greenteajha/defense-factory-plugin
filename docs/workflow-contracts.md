@@ -1,6 +1,6 @@
 # Provider-neutral workflow contracts
 
-These contracts describe the intended six-stage defensive workflow. They are the design basis for the plugin's skills; version 0.1.0 implements stage 1 as the `threat-model` skill; stages 2 to 6 are not implemented yet. The orchestrating client may run one requested stage or the full sequence when each stage is implemented. It must preserve status and evidence at handoffs.
+These contracts describe the intended six-stage defensive workflow. They are the design basis for the plugin's skills; version 0.2.0 implements stage 1 as the `threat-model` skill; stages 2 to 6 are not implemented yet. The orchestrating client may run one requested stage or the full sequence when each stage is implemented. It must preserve status and evidence at handoffs.
 
 ## Shared record
 

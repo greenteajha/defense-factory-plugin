@@ -2,7 +2,10 @@
 
 All notable changes are recorded here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased] - 0.1.0 candidate
+## [0.2.0] - 2026-09-25
+
+First release. Implements stage 1 (scope and threat model); stages 2 to 6 remain in design. Version 0.1.0 was a development candidate and was never released.
+
 
 - Added the portable Agent Plugins manifest and an empty shared `skills/` directory; no skills are implemented yet.
 - Added thin Claude Code and ChatGPT/Codex package metadata; Cursor can read the portable manifest.

@@ -1,6 +1,6 @@
 {
   "name": "defense-factory-plugin",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Evidence-led application security workflows for authorized repositories.",
   "author": {
     "name": "Jeremy Teo"

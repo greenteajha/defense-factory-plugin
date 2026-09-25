@@ -1,0 +1,7 @@
+# OS and editor metadata
+.DS_Store
+Thumbs.db
+
+# Python caches from running scripts and tests
+__pycache__/
+*.pyc

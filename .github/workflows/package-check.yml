@@ -16,5 +16,3 @@ jobs:
           python-version: '3.12'
       - run: python3 scripts/check-package.py
       - run: python3 -m unittest discover -s tests -v
-      - name: Build and verify release packages
-        run: python3 scripts/package-release.py --out-dir "$RUNNER_TEMP/packages"

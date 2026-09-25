@@ -5,6 +5,3 @@ Thumbs.db
 # Python caches from running scripts and tests
 __pycache__/
 *.pyc
-
-# Release packages built by scripts/package-release.py
-build/

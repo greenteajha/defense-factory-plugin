@@ -102,6 +102,7 @@ class PrepareWorkspaceTest(ScriptTest):
         result = run("prepare_workspace.py", "--root", str(self.root), "--run-id", "r1")
         self.assertEqual(result.returncode, 0, result.stderr)
         data = json.loads(result.stdout)
+        self.assertEqual(Path(data["stage_dir"]).name, "1-threat-model")
         self.assertTrue(data["git_ignored"])
         self.assertRegex(data["timestamp"], r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$")
         self.assertTrue(Path(data["stage_dir"]).is_dir())
@@ -162,6 +163,11 @@ class CheckCitationsTest(ScriptTest):
     def test_valid_citations_pass(self):
         code, data = self.check("See `src/api/server.py:2` and `src/api/server.py:1-3`.")
         self.assertEqual((code, data["checked"], data["invalid"]), (0, 2, []))
+
+    def test_network_addresses_are_not_citations(self):
+        code, data = self.check("Listens on `127.0.0.1:4173`, `0.0.0.0:80`, `localhost:3000`, `[::1]:443`; "
+                                "see `src/api/server.py:1`.")
+        self.assertEqual((code, data["checked"], data["invalid"]), (0, 1, []))
 
     def test_invalid_citations_fail(self):
         code, data = self.check("`src/api/server.py:9` `missing.py:1` `/etc/passwd:1` "

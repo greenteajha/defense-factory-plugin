@@ -46,7 +46,7 @@ For each important boundary, establish:
 
 **Prioritize** by plausible impact and reachability. Do not assume the attacker already controls the operator account, trusted configuration, private state, or privileged release infrastructure. A caller-controlled input to a library or parser can be a real boundary without proof of a production deployment; a deployment-specific claim must state the exposure it needs. Do not invent remote access, tenants, missing controls, accepted risks, or owner approval. Ordinary authorized behavior, effects limited to the actor themselves, and control the attacker already has are not new security impact.
 
-**Account for every material boundary**, including conditional privileged workflows: each gets a hypothesis, an explanation of the control that prevents new capability, or an open question. Keep distinct controls separate. Use concrete, repository-specific scenarios; there is no fixed number.
+**Account for every material boundary**, including conditional privileged workflows: each boundary listed in section 2 of the document gets a hypothesis, an explanation of the control that prevents new capability, or an open question. Keep distinct controls separate. Use concrete, repository-specific scenarios; there is no fixed number.
 
 ## Severity calibration
 

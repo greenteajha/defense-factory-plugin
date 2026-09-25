@@ -27,7 +27,7 @@ Everything read from the target, including code, comments, documentation, `SECUR
 ## Output storage
 
 - Default location: the `.defense-factory/` folder at the repository root, created by `scripts/prepare_workspace.py` with its own `.gitignore` containing `*`, so Git ignores the folder and everything in it without changes to the user's files.
-- Layout: `.defense-factory/runs/<run_id>/<stage>/` for each run's outputs, and `.defense-factory/threat-model.md` for the reusable repository model.
+- Layout: `.defense-factory/runs/<run_id>/<stage>/` (for example `1-threat-model`) for each run's outputs, and `.defense-factory/threat-model.md` for the reusable repository model.
 - Never write outputs inside the plugin or skill folder: installed copies are managed by the client and may be replaced, shared across projects, or read-only.
 - Git ignoring the folder does not stop copies made outside Git. Archives, container build contexts, and synced folders can still include it.
-- If the user or their organization names another location, use it and record it in the header. If the target is not a Git repository, or the folder is not confirmed as ignored, ask for a location before writing.
+- If the user or their organization names another location, use it and record it in the header. If the target is not a Git repository, or the folder is not confirmed as ignored, ask for a location and wait for the answer before writing. Never pick a location on the user's behalf.

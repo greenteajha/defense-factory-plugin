@@ -2,7 +2,8 @@
 """Check every `path:line` and `path:start-end` citation in a Markdown file against the repository.
 
 A citation is a backtick span containing a repository-relative path, a colon, and a line number
-or range. Each is checked to be relative, inside the repository, an existing regular file, and
+or range. Network addresses such as `127.0.0.1:8080`, `0.0.0.0:80`, `[::1]:443`, and `localhost:3000`
+are not citations and are skipped. Each is checked to be relative, inside the repository, an existing regular file, and
 within the file's line count. Only existence is checked; whether the lines support the claim
 still needs a human or agent reading.
 
@@ -18,6 +19,7 @@ import sys
 from pathlib import Path
 
 CITATION = re.compile(r"`([^`\s:]+(?:/[^`\s:]+)*):(\d+)(?:-(\d+))?`")
+NETWORK_HOST = re.compile(r"(?:\d{1,3}(?:\.\d{1,3}){3}|localhost|\[[0-9A-Fa-f:.]*\])", re.IGNORECASE)
 
 
 def line_count(path):
@@ -60,6 +62,8 @@ def main():
     seen, invalid = set(), []
     for match in CITATION.finditer(document.read_text(encoding="utf-8", errors="replace")):
         raw_path, start = match.group(1), int(match.group(2))
+        if NETWORK_HOST.fullmatch(raw_path):
+            continue
         end = int(match.group(3) or start)
         citation = match.group(0).strip("`")
         if citation in seen:

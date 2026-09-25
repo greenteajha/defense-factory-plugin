@@ -7,7 +7,7 @@ Every Defense Factory stage output starts with a YAML header, the stage record, 
 | Field | Required | Meaning |
 | --- | --- | --- |
 | `record_version` | yes | Format version of this header. Currently `1`. |
-| `stage` | yes | Stage identifier, for example `1-threat-model`. |
+| `stage` | yes | Stage identifier, also used as the stage folder name, for example `1-threat-model`. |
 | `status` | yes | One of the status values below. |
 | `run_id` | yes | Identifier of this run; the name of the run folder. |
 | `timestamp` | yes | When the record was written, in UTC ISO 8601 (for example `2026-09-24T07:15:00Z`). Take it from `prepare_workspace.py` or the system clock; never estimate it. |
@@ -17,9 +17,10 @@ Every Defense Factory stage output starts with a YAML header, the stage record, 
 | `version` | yes | Commit for a clean Git checkout; snapshot digest otherwise. |
 | `revision` | when available | The Git commit, even when the working tree has uncommitted changes. |
 | `scope` | yes | `whole-repository`, or the list of in-scope paths relative to the repository root. |
-| `authorization` | yes | Who confirmed authorization, when, and how (for example "user confirmed in session"). |
+| `authorization` | yes | Who confirmed authorization, when, and how, quoting the user's own words (for example `user stated in session on 2026-09-25: "I'm authorized to assess this repository"`), or the calling workflow's record. Never paraphrase a confirmation that was not given. |
 | `source` | yes | How the content was obtained: `generated`, `reused`, `supplied`, `supplied-revised`, or `repository-guidance`. |
 | `reused_from` | when `source` is `reused` | The `run_id` of the stored model that was copied. |
+| `output_location` | yes | Where outputs were saved and who chose it: `default .defense-factory (Git-ignored)` or `user-chosen: <path> (<ignored or not ignored by Git>)`. |
 | `inputs` | yes | Supplied models, knowledge bases, user context, and policies used, by label; `[]` if none. |
 | `independent_review` | yes | `independent`, `not-independent` (same-agent second pass), or `not-performed` with a reason. |
 | `tools` | yes | Helpers and versions used (for example Python version), or a note that they were not used. |

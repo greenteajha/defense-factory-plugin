@@ -34,7 +34,7 @@ This table was compiled from codex-security `main` on 2026-09-24. Recheck it whe
 | 26 | Check the model for scope, runtime boundaries, evidence, and hypothesis separation before writing; write only the selected outputs | Same | `SKILL.md` Workflow 9-10 |
 | 27 | Persistent storage that cannot be committed, plus a per-scan copy later phases treat as the source of truth | Self-ignoring `.defense-factory/`, checked with `git check-ignore`; run copy is the source of truth | `scripts/prepare_workspace.py`; `evidence-and-handling.md` |
 | 28 | `agents/openai.yaml` UI metadata (display name, short description, default prompt) | Same file, validated by `scripts/check-package.py` | `agents/openai.yaml` |
-| 29 | Explicit invocation and phase-based activation | Explicit invocation by skill name (`$threat-model` in Codex; the client's skill or slash-command picker in Claude Code and Cursor) plus a description that activates for threat-model requests and stage 1 | `SKILL.md` frontmatter |
+| 29 | Explicit invocation and phase-based activation | Explicit invocation by skill name (`$threat-model` in Codex, `/defense-factory-plugin:threat-model` in Claude Code, the skill picker in Cursor) plus a description that activates for threat-model requests and stage 1 | `SKILL.md` frontmatter |
 
 ## Capabilities this skill adds
 

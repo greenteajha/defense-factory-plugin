@@ -42,7 +42,7 @@ def main():
     parser.add_argument("--root", default=".", help="target root (default: current directory)")
     parser.add_argument("--out-dir", help="user-chosen output folder instead of .defense-factory/")
     parser.add_argument("--run-id", help="run identifier (default: UTC timestamp)")
-    parser.add_argument("--stage", default="01-threat-model", help="stage folder name")
+    parser.add_argument("--stage", default="1-threat-model", help="stage folder name; matches the record's stage field")
     parser.add_argument("--allow-unignored", action="store_true",
                         help="write to --out-dir even if Git would not ignore it (user accepted the risk)")
     args = parser.parse_args()

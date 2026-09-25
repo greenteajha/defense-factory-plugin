@@ -10,7 +10,8 @@ target_kind: "<git_revision | git_worktree | directory_snapshot>"
 version: "<commit, or snapshot digest>"
 revision: "<commit, if any>"
 scope: whole-repository      # or a list of repository-relative paths
-authorization: "<who confirmed, when, how>"
+authorization: "<who confirmed, when, how; quote the user's words>"
+output_location: "<default .defense-factory (Git-ignored) | user-chosen: path (ignored or not)>"
 source: generated           # generated | reused | supplied | supplied-revised | repository-guidance
 inputs: []                  # labels of supplied models, knowledge bases, user context, policies
 independent_review: independent   # independent | not-independent | not-performed: <reason>

@@ -2,7 +2,9 @@
 
 All notable changes are recorded here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [0.3.0] - unreleased
+## [0.3.0] - 2026-09-26
+
+Adds stage 2 (finding discovery) as the `finding-discovery` skill and removes the stage 1 confirmation prompts. Tested live in Cursor by the maintainer; Claude Code and ChatGPT/Codex have not yet been tested live with this version. Known limitation: for a folder that is not a Git repository, the target identity depends on the folder's absolute path, so a threat model made on a copy of the folder in another location (for example a cloud workspace) is reported as stale by stage 2.
 
 - Added the stage 2 design for the `finding-discovery` skill (`docs/finding-discovery-design.md`) and its planned capability map against Codex Security (`docs/finding-discovery-parity.md`).
 - Added `shared/`: master copies of the record and evidence references and the five stage 1 helper scripts, a manifest of which skills receive each file, and `scripts/sync-shared.py`. The package check now fails when a copy is missing or differs, a master is unlisted, or a skill holds an unlisted copy.

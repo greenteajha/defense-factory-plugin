@@ -264,6 +264,73 @@ class PackageCheckTest(unittest.TestCase):
         self.write_openai_yaml('interface:\n  icon_small: "./assets/icon.png"\n')
         self.assert_fails("interface.icon_small must be an existing ./assets/ file")
 
+    # Shared skill resources -------------------------------------------------------------
+
+    SHARED = "references/record-and-status.md"
+
+    def map_shared(self, relative, skills):
+        edit_json(self.root, "shared/manifest.json", lambda d: d["files"].update({relative: skills}))
+
+    def run_sync(self, *args):
+        return subprocess.run([sys.executable, str(REPO / "scripts" / "sync-shared.py"),
+                               "--root", str(self.root), *args], capture_output=True, text=True)
+
+    def test_shared_copy_missing(self):
+        (self.root / "skills" / "threat-model" / self.SHARED).unlink()
+        self.assert_fails(f"skills/threat-model/{self.SHARED}: missing")
+
+    def test_shared_copy_differs(self):
+        copy = self.root / "skills" / "threat-model" / self.SHARED
+        copy.write_text(copy.read_text() + "Local edit.\n")
+        self.assert_fails(f"skills/threat-model/{self.SHARED}: differs from shared/{self.SHARED}")
+
+    def test_shared_master_edit_without_sync(self):
+        master = self.root / "shared" / self.SHARED
+        master.write_text(master.read_text() + "New rule.\n")
+        self.assert_fails("differs from shared/")
+
+    def test_shared_master_not_in_manifest(self):
+        (self.root / "shared" / "references" / "extra.md").write_text("Extra.\n")
+        self.assert_fails("shared/references/extra.md: not listed in shared/manifest.json")
+
+    def test_shared_manifest_names_missing_master(self):
+        self.map_shared("references/ghost.md", ["threat-model"])
+        self.assert_fails("shared/references/ghost.md: listed in the manifest but missing")
+
+    def test_shared_manifest_names_unknown_skill(self):
+        self.map_shared(self.SHARED, ["threat-model", "no-such-skill"])
+        self.assert_fails("names skill 'no-such-skill', which does not exist")
+
+    def test_shared_manifest_rejects_other_folders(self):
+        (self.root / "shared" / "docs").mkdir()
+        (self.root / "shared" / "docs" / "x.md").write_text("X.\n")
+        self.map_shared("docs/x.md", ["threat-model"])
+        self.assert_fails("'docs/x.md' must be <folder>/<file>")
+
+    def test_shared_unmapped_copy_in_other_skill(self):
+        folder = add_skill(self.root)
+        shutil.copy(self.root / "shared" / self.SHARED, folder / self.SHARED)
+        self.assert_fails(f"skills/good-skill/{self.SHARED}: copy of a shared file, but 'good-skill' is not listed")
+
+    def test_sync_adds_copies_for_new_skill(self):
+        folder = add_skill(self.root)
+        skills = json.loads((self.root / "shared" / "manifest.json").read_text())["files"][self.SHARED]
+        self.map_shared(self.SHARED, skills + ["good-skill"])
+        self.assert_fails(f"skills/good-skill/{self.SHARED}: missing")
+        self.assertEqual(self.run_sync("--check").returncode, 1)
+        result = self.run_sync()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(f"updated skills/good-skill/{self.SHARED}", result.stdout)
+        self.assertEqual((folder / self.SHARED).read_bytes(), (self.root / "shared" / self.SHARED).read_bytes())
+        self.assert_passes()
+
+    def test_sync_refuses_when_manifest_is_wrong(self):
+        (self.root / "shared" / "references" / "extra.md").write_text("Extra.\n")
+        copy = self.root / "skills" / "threat-model" / self.SHARED
+        copy.write_text("Local edit.\n")
+        self.assertEqual(self.run_sync().returncode, 1)
+        self.assertEqual(copy.read_text(), "Local edit.\n")
+
 
 if __name__ == "__main__":
     unittest.main()

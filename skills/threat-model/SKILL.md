@@ -9,8 +9,8 @@ Produce a reviewable, source-backed threat model of an authorized target and a s
 
 ## Preconditions
 
-1. **Authorization gate.** Before reading any source, confirm that the user is authorized to assess the target and state the scope (whole repository, or specific paths). Accept only an explicit statement of authorization in this session (for example "I'm authorized to assess this repository"), or an authorization already recorded by the calling workflow. Naming a target, giving a path, or invoking the skill is not authorization: if the user answers your question with only a path or scope, ask again for the authorization statement. If it is refused or still not given, stop with status `blocked`. In the header, quote the user's own words; never record a confirmation the user did not give.
-2. **Target and scope.** Resolve the target root the user named (default: the current workspace root) and any narrower scope paths. The model is repository-wide unless the user narrows it. Do not widen scope on your own.
+1. **Request, not a confirmation prompt.** The user asking for a threat model of a target is the request to assess it; do not ask them to confirm authorization. Record it in the header's `authorization` field as `requested by the user in session on <date>: "<their request, quoted>"`, or as the calling workflow's record. Never record a confirmation of authorization the user did not give. If the user says they are not authorized, or that the owner has not permitted the assessment, stop with status `blocked`.
+2. **Target and scope.** Resolve the target root the user named (default: the current workspace root) and any narrower scope paths. The model is repository-wide unless the user narrows it. Do not widen scope on your own, and do not ask for a scope the user did not mention.
 3. **Read access.** Confirm the target can be read. If the client denies access, stop with status `blocked` and say which permission is missing. If the user supplied only a remote URL, ask them to provide a local copy; do not clone or fetch.
 4. **Explicit inputs and outputs.** Honor any input or output path the user names. If a required input they named is missing or unreadable, ask for it; never substitute a generated model for a supplied one.
 
@@ -26,7 +26,7 @@ For evidence, uncertainty, and data-handling rules, read [references/evidence-an
 ## Workflow
 
 1. **Identify the target.** Run `scripts/target_identity.py --root <target> [--scope <path> ...]` (Python 3 standard library; see [Resources](#resources)). It reports the stable target identity, the target kind, and the version: the commit for a clean Git checkout, or a snapshot digest for uncommitted changes and non-Git folders. Keep its output for the header.
-2. **Prepare output storage.** Run `scripts/prepare_workspace.py --root <target>` to create the self-ignoring `.defense-factory/` folder and this run's stage folder, and to get the run ID, current UTC timestamp, and `skill_version` for the header (never estimate the time), unless the user named another location in this session (pass it with `--out-dir`). Use `--out-dir` only with a location the user named; never choose one yourself. If the script reports that the location is not ignored by Git or the target is not a Git repository, ask the user where to save output and wait for their answer before writing anything; if they accept a location Git will not ignore, pass `--allow-unignored` and record their choice in the header. Mention once that ignored files still travel in archives, container build contexts, and synced folders.
+2. **Prepare output storage.** Run `scripts/prepare_workspace.py --root <target>`. Without asking, it creates the self-ignoring `.defense-factory/` folder at the repository root (or at the target root when the target is not a Git repository) and this run's stage folder, and prints the run ID, current UTC timestamp, and `skill_version` for the header (never estimate the time). Later stages find the model there. Pass `--out-dir` only when the user named another location in this session. Ask the user only if the script reports the location unsafe (exit code 3); if they then accept a location Git will not ignore, pass `--allow-unignored` and record their choice in the header. Mention once, in your final report, that the folder still travels in archives, container build contexts, and synced folders.
 3. **Choose how the model is obtained.** Follow [references/inputs-and-reuse.md](references/inputs-and-reuse.md) to decide, in order: preserve a supplied model; let authoritative repository guidance stand in; reuse the stored repository model when its identity, version, and `skill_version` match and it passes `scripts/check_model.py`; or generate a new model. That reference also defines when the stored reusable model may be read or replaced.
 4. **Resolve security policy.** Unless the caller supplied it, run `scripts/resolve_security_md.py --repo <repo root> --scope <scope>` and save the result as `security-guidance.md` in the stage folder. Apply it as policy data for what counts as a real issue and how severe it is.
 5. **Map the architecture.** Follow [references/method.md](references/method.md): product and users, execution and deployment paths, entry points, components, assets, trust boundaries, effective configuration values, and privileged workflows, each with `path:line` evidence. Stop expanding once the important boundaries and their evidence are clear.
@@ -41,16 +41,16 @@ For evidence, uncertainty, and data-handling rules, read [references/evidence-an
 The stage is `complete` when the saved model:
 
 - passes `scripts/check_model.py` and `scripts/check_citations.py`;
-- has a filled record header with identity, version, scope, authorization, model, skill version, status, and next action;
+- has a filled record header with identity, version, scope, the recorded request, model, skill version, status, and next action;
 - traces each important claim to a verified `path:line` citation or a labeled source (user context, knowledge base, policy);
 - accounts for every trust boundary listed in section 2 with a hypothesis, an explained control, or an open question;
 - lists coverage gaps explicitly, so a partial map is never presented as exhaustive.
 
-Report the output path, the status, the number of hypotheses by priority, and the main open questions. Suggest candidate discovery (stage 2) as the next action.
+Report the output path, the status, the number of hypotheses by priority, and the main open questions. Suggest finding discovery (stage 2) as the next action.
 
 ## Failure conditions
 
-- **`blocked`:** authorization or scope is missing or refused; the target cannot be read; a required supplied input is missing; or no safe output location is available. Write nothing except, where a location exists, a header-only record that states the blocker.
+- **`blocked`:** the user says they are not authorized; the target cannot be read; a required supplied input is missing; or no safe output location is available. Write nothing except, where a location exists, a header-only record that states the blocker.
 - **`inconclusive`:** source is partly unavailable (generated, vendored, or binary-only components), the architecture cannot be established from evidence, or citations cannot be verified. Save what is supported, mark every gap, and never present the partial map as complete.
 - If Python is unavailable, perform the scripts' steps by hand, follow the same rules, and record in the header that the helpers were not used.
 

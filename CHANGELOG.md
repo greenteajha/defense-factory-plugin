@@ -2,6 +2,18 @@
 
 All notable changes are recorded here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - unreleased
+
+- Added the stage 2 design for the `finding-discovery` skill (`docs/finding-discovery-design.md`) and its planned capability map against Codex Security (`docs/finding-discovery-parity.md`).
+- Added `shared/`: master copies of the record and evidence references and the five stage 1 helper scripts, a manifest of which skills receive each file, and `scripts/sync-shared.py`. The package check now fails when a copy is missing or differs, a master is unlisted, or a skill holds an unlisted copy.
+- Added the `finding-discovery` skill (stage 2): instructions, references (method, discovery checklist, inputs and authorization, finding format), the `findings.json` schema and example, `agents/openai.yaml`, eval cases, and five helpers: `start_findings.py`, `list_scope_files.py`, `normalize_findings.py`, `check_findings.py`, and `render_findings.py`. Stage 2 output items are called findings and carry `status: unvalidated` until stage 3. Not yet tested live in each client.
+- `target_identity.py` can now be imported (`resolve()`, `identify()`); its output is unchanged.
+- The shared record reference now has sections for stage 1 and stage 2 fields. Because the threat-model skill's files changed, models stored by 0.2.0 will not be reused.
+- Stage 1 no longer prompts for authorization: it records the user's request (quoted) and stops only if the user says they are not authorized. Stage 2 carries that record forward within the same run.
+- Stage 1 no longer asks where to save output for targets that are not Git repositories: `prepare_workspace.py` defaults to `.defense-factory/` in the target folder, which target identity already ignores.
+- Added `find_threat_model.py` to stage 2: it selects the newest valid, up-to-date stage 1 run copy without asking the user.
+- Renamed stage 2 from "candidate discovery" to "finding discovery" in the workflow contracts and the threat-model skill's next-step wording.
+
 ## [0.2.0] - 2026-09-25
 
 First release. Implements stage 1 (scope and threat model); stages 2 to 6 remain in design. Version 0.1.0 was a development candidate and was never released.

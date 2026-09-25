@@ -1,0 +1,4 @@
+interface:
+  display_name: "Finding Discovery"
+  short_description: "Find unvalidated security findings from a threat model"
+  default_prompt: "Use $finding-discovery to find security issues in this repository, starting from its threat model."

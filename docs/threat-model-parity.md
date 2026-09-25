@@ -38,7 +38,7 @@ This table was compiled from codex-security `main` on 2026-09-24. Recheck it whe
 
 ## Capabilities this skill adds
 
-- An explicit authorization and scope gate before any source is read, recorded in the output.
+- The user's request is recorded in the output (who asked, when, in their words); the skill stops if the user says they are not authorized. It does not prompt for confirmation.
 - A stage record header shared with later stages (status, actor, provenance, coverage gaps, next action).
 - A STRIDE omission check per boundary.
 - Explicit `blocked` and `inconclusive` outcomes, and a manual fallback when Python is unavailable.

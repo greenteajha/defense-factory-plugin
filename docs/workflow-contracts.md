@@ -1,6 +1,6 @@
 # Provider-neutral workflow contracts
 
-These contracts describe the intended six-stage defensive workflow. They are the design basis for the plugin's skills; version 0.2.0 implements stage 1 as the `threat-model` skill; stages 2 to 6 are not implemented yet. The orchestrating client may run one requested stage or the full sequence when each stage is implemented. It must preserve status and evidence at handoffs.
+These contracts describe the intended six-stage defensive workflow. They are the design basis for the plugin's skills; version 0.3.0 implements stage 1 as the `threat-model` skill and stage 2 as the `finding-discovery` skill; stages 3 to 6 are not implemented yet. The orchestrating client may run one requested stage or the full sequence when each stage is implemented. It must preserve status and evidence at handoffs.
 
 ## Shared record
 
@@ -14,17 +14,17 @@ Every stage records: repository and revision; authorized scope; stage and status
 - **Blocked or inconclusive:** Missing authorization, unavailable source, unclear scope, or insufficient architecture context. Mark coverage gaps; never present a partial map as exhaustive.
 - **Gate and retention:** Require access authorization before inspection. Retain only the map, necessary references, and review notes under the target organization's policy.
 
-## 2. Candidate discovery
+## 2. Finding discovery
 
 - **Entry and inputs:** Stage-1 context or an explicit narrow scan request; source and relevant security policy.
-- **Output and evidence:** Deduplicated candidate findings with source/sink path, affected revision, exposure assumptions, and counterevidence.
-- **Completion:** Each candidate has a reproducible investigation question; candidates remain unvalidated.
+- **Output and evidence:** Deduplicated unvalidated findings with source/sink path, affected revision, exposure assumptions, and counterevidence.
+- **Completion:** Each finding has a reproducible investigation question; findings remain unvalidated until stage 3.
 - **Blocked or inconclusive:** Tool or coverage gaps are recorded; unsupported guesses are discarded or marked uncertain.
 - **Gate and retention:** Respect scan scope and tool permissions. Store minimal source excerpts in controlled finding storage.
 
 ## 3. Isolated validation
 
-- **Entry and inputs:** Candidate, expected behavior, and an authorized, reproducible test environment.
+- **Entry and inputs:** Unvalidated finding, expected behavior, and an authorized, reproducible test environment.
 - **Output and evidence:** `confirmed`, `rejected`, or `inconclusive`; setup details, test steps, observed result, and counterevidence.
 - **Completion:** A confirmed finding has repeatable evidence. Failure to provision or execute a test is inconclusive, not rejection.
 - **Blocked or inconclusive:** Unsafe environment, absent dependencies, or non-reproducible result.

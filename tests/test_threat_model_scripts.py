@@ -111,10 +111,16 @@ class PrepareWorkspaceTest(ScriptTest):
                                 capture_output=True, text=True).stdout
         self.assertEqual(status, "")
 
-    def test_non_git_target_needs_a_location(self):
-        result = run("prepare_workspace.py", "--root", str(self.root))
-        self.assertEqual(result.returncode, 2)
-        self.assertIn("needs-location", result.stderr)
+    def test_non_git_target_defaults_to_its_own_folder(self):
+        result = run("prepare_workspace.py", "--root", str(self.root), "--run-id", "r1")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(Path(report["base_dir"]), (self.root / ".defense-factory").resolve())
+        self.assertIsNone(report["git_ignored"])
+        self.assertEqual((self.root / ".defense-factory" / ".gitignore").read_text().splitlines()[-1], "*")
+        before = self.identity()["version"]
+        (Path(report["stage_dir"]) / "threat-model.md").write_text("output\n")
+        self.assertEqual(self.identity()["version"], before, "output must not change the target's version")
 
     @unittest.skipUnless(HAS_GIT, "git not installed")
     def test_unignored_custom_location_is_unsafe(self):

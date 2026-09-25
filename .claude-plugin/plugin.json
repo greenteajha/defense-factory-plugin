@@ -1,11 +1,14 @@
 {
   "name": "defense-factory-plugin",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Evidence-led application security workflows for authorized repositories.",
   "author": {
     "name": "Jeremy Teo"
   },
   "repository": "https://github.com/greenteajha/defense-factory-plugin",
   "license": "MIT",
-  "keywords": ["application-security", "defensive-workflows"]
+  "keywords": [
+    "application-security",
+    "defensive-workflows"
+  ]
 }

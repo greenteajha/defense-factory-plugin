@@ -1,0 +1,365 @@
+{
+  "record": {
+    "record_version": 1,
+    "stage": "2-finding-discovery",
+    "status": "complete",
+    "run_id": "20260925T060000Z",
+    "timestamp": "2026-09-25T07:10:00Z",
+    "actor": "Example agent in an example client, requested by the repository owner",
+    "model": "Example Model 1.0",
+    "skill_version": "finding-discovery/sha256:0123456789abcdef",
+    "target_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "target_kind": "git_revision",
+    "version": "2222222222222222222222222222222222222222",
+    "revision": "2222222222222222222222222222222222222222",
+    "scope": "whole-repository",
+    "authorization": "inherited from stage 1 run 20260925T060000Z: requested by the user in session on 2026-09-25: \"Threat model this repository\"",
+    "output_location": "default .defense-factory (Git-ignored)",
+    "source": "stage-1-record",
+    "inputs": [
+      "SEED-1: scanner result supplied by the user (open redirect in the login handler)"
+    ],
+    "independent_baseline": "independent",
+    "tools": "Python 3.12; list_scope_files.py, normalize_findings.py, check_findings.py, render_findings.py, check_citations.py",
+    "evidence": "citations in findings.md; scope-inventory.txt; security-guidance.md",
+    "assumptions": [
+      "The upload API is reachable by any signed-in user, per the stage 1 model."
+    ],
+    "coverage_gaps": [
+      "TM-H4: src/legacy/ was not reviewed within the session budget, so the legacy report exporter remains uninvestigated."
+    ],
+    "next_action": "Stage 3: validate FD-1 and FD-2 first (highest hypothesis priority), then FD-3 and FD-4."
+  },
+  "threat_model": {
+    "path": "../1-threat-model/threat-model.md",
+    "sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+    "run_id": "20260925T060000Z"
+  },
+  "seeds": [
+    {
+      "id": "SEED-1",
+      "kind": "scanner",
+      "label": "Scanner result: open redirect",
+      "summary": "The user's scanner flagged the next parameter of the login handler as an open redirect.",
+      "locations": [
+        {
+          "path": "src/api/auth.py",
+          "start_line": 15,
+          "end_line": 15,
+          "role": "sink"
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "FD-1",
+      "key": "archive-member-path-zip",
+      "fingerprint": "fp:d03c191293269307",
+      "title": "ZIP import writes members outside the import folder",
+      "family": "path-traversal.archive-extraction",
+      "instance": "zip",
+      "cwe_ids": [
+        "CWE-22"
+      ],
+      "origin": [
+        "TM-H1"
+      ],
+      "hypothesis_priority": "High",
+      "discovered_by": [
+        "baseline",
+        "investigator"
+      ],
+      "locations": [
+        {
+          "path": "src/api/routes.py",
+          "start_line": 12,
+          "end_line": 14,
+          "role": "entrypoint"
+        },
+        {
+          "path": "src/api/upload.py",
+          "start_line": 20,
+          "end_line": 20,
+          "role": "source"
+        },
+        {
+          "path": "src/api/upload.py",
+          "start_line": 24,
+          "end_line": 26,
+          "role": "root_control"
+        },
+        {
+          "path": "src/api/upload.py",
+          "start_line": 28,
+          "end_line": 28,
+          "role": "sink"
+        }
+      ],
+      "attacker": "Any signed-in user; controls the uploaded archive, not the server's filesystem or configuration.",
+      "source": "Member names inside an uploaded ZIP archive.",
+      "control": "The containment check compares the joined path as a string prefix before normalizing it, so '../' segments pass.",
+      "sink": "Writing each member's bytes to the joined destination path.",
+      "path": "POST /import (routes.py) passes the upload to extract_zip, which joins each member name to the import folder, checks the prefix, then writes the file.",
+      "impact": "Overwrite files the service account can write outside the import folder, including configuration read at startup.",
+      "exposure_assumptions": [
+        "The import route is enabled (it is by default in config/defaults.py)."
+      ],
+      "counterevidence": "Searched for later normalization or a sandboxed write helper between the check and the write; none found. The service account's write access outside the data folder is not established from source.",
+      "proof_gaps": [
+        "Whether the deployed service account can write outside the data folder."
+      ],
+      "investigation_question": "Upload a ZIP with a member named '../outside.txt' to /import in an isolated copy: the expected safe behaviour is rejection; the finding holds if outside.txt is written beside the import folder.",
+      "confidence": {
+        "level": "High",
+        "reason": "The prefix check before normalization and the reachable write are both visible in source."
+      },
+      "merged_from": [
+        "archive-member-path-zip-copy"
+      ],
+      "status": "unvalidated"
+    },
+    {
+      "id": "FD-2",
+      "key": "archive-member-path-tar",
+      "fingerprint": "fp:0ad0f9601c5f9ff2",
+      "title": "TAR import follows member names and links outside the import folder",
+      "family": "path-traversal.archive-extraction",
+      "instance": "tar",
+      "cwe_ids": [
+        "CWE-22",
+        "CWE-59"
+      ],
+      "origin": [
+        "TM-H1"
+      ],
+      "hypothesis_priority": "High",
+      "discovered_by": [
+        "investigator"
+      ],
+      "locations": [
+        {
+          "path": "src/api/upload.py",
+          "start_line": 34,
+          "end_line": 34,
+          "role": "root_control"
+        },
+        {
+          "path": "src/api/upload.py",
+          "start_line": 36,
+          "end_line": 36,
+          "role": "sink"
+        }
+      ],
+      "attacker": "Any signed-in user; controls the uploaded archive.",
+      "source": "Member names and link targets inside an uploaded TAR archive.",
+      "control": "extract_tar calls the library's extract-all with no member filter, so absolute names, '../' names, and symbolic links are honoured.",
+      "sink": "Extracting all members into the import folder.",
+      "path": "POST /import with a .tar upload reaches extract_tar, which extracts every member without filtering.",
+      "impact": "Write or link files outside the import folder, as for the ZIP path.",
+      "exposure_assumptions": [
+        "The import route is enabled.",
+        "The Python version in use does not apply a safe default extraction filter."
+      ],
+      "counterevidence": "Searched for a filter argument or a pre-extraction member check; none found. Newer Python versions apply a default filter, which would block most of this.",
+      "proof_gaps": [
+        "The Python version used in deployment."
+      ],
+      "investigation_question": "Upload a TAR with a '../outside.txt' member and a symbolic link to /tmp in an isolated copy on the deployed Python version: the finding holds if either is created outside the import folder.",
+      "confidence": {
+        "level": "Low",
+        "reason": "Reachability is shown in source, but the effect depends on the deployed Python version's default extraction filter, which the repository does not pin."
+      },
+      "related": [
+        "FD-1"
+      ],
+      "status": "unvalidated"
+    },
+    {
+      "id": "FD-3",
+      "key": "login-next-redirect",
+      "fingerprint": "fp:fc21e669e18c2479",
+      "title": "Login handler redirects to any URL in the next parameter",
+      "family": "open-redirect.login-next",
+      "cwe_ids": [
+        "CWE-601"
+      ],
+      "origin": [
+        "SEED-1"
+      ],
+      "hypothesis_priority": null,
+      "discovered_by": [
+        "parent"
+      ],
+      "locations": [
+        {
+          "path": "src/api/auth.py",
+          "start_line": 8,
+          "end_line": 8,
+          "role": "entrypoint"
+        },
+        {
+          "path": "src/api/auth.py",
+          "start_line": 15,
+          "end_line": 15,
+          "role": "sink"
+        }
+      ],
+      "attacker": "An unauthenticated attacker who can send a victim a link.",
+      "source": "The next query parameter of GET /login.",
+      "control": "None: the handler passes next to the redirect without checking its host.",
+      "sink": "The redirect response after sign-in.",
+      "path": "GET /login?next=... stores next and redirects to it after successful sign-in.",
+      "impact": "Send a signed-in victim to an attacker-controlled site that appears to come from the application, aiding phishing.",
+      "exposure_assumptions": [],
+      "counterevidence": "Searched for a host allowlist or relative-URL check in the handler and in the response middleware; none found.",
+      "proof_gaps": [],
+      "investigation_question": "Sign in through /login?next=https://example.test in an isolated copy: the expected safe behaviour is a redirect within the application; the finding holds if the browser is sent to example.test.",
+      "confidence": {
+        "level": "Medium",
+        "reason": "Direct in source; impact depends on how the login page is used."
+      },
+      "status": "unvalidated"
+    },
+    {
+      "id": "FD-4",
+      "key": "debug-endpoint-environment",
+      "fingerprint": "fp:1d135b666f03391c",
+      "title": "Debug route returns environment variable names and values",
+      "family": "information-disclosure.debug-endpoint",
+      "cwe_ids": [
+        "CWE-200"
+      ],
+      "origin": [
+        "open-ended"
+      ],
+      "hypothesis_priority": null,
+      "discovered_by": [
+        "baseline"
+      ],
+      "locations": [
+        {
+          "path": "src/api/routes.py",
+          "start_line": 30,
+          "end_line": 30,
+          "role": "entrypoint"
+        },
+        {
+          "path": "src/api/routes.py",
+          "start_line": 32,
+          "end_line": 32,
+          "role": "sink"
+        }
+      ],
+      "attacker": "Anyone who can reach the service when debug mode is on.",
+      "source": "A GET request to /debug/env.",
+      "control": "The route is registered only when DEBUG is set; there is no authentication on it.",
+      "sink": "Serializing the process environment into the response.",
+      "path": "GET /debug/env returns the environment when the debug flag enables the route.",
+      "impact": "Disclose secrets held in environment variables, such as the database password variable.",
+      "exposure_assumptions": [
+        "DEBUG is enabled in the deployment, which the stage 1 model does not establish."
+      ],
+      "counterevidence": "DEBUG defaults to off in config/defaults.py; no deployment file in the repository turns it on.",
+      "proof_gaps": [
+        "Whether any deployment enables DEBUG."
+      ],
+      "investigation_question": "With DEBUG enabled in an isolated copy, request /debug/env without signing in: the finding holds if environment values are returned.",
+      "confidence": {
+        "level": "Low",
+        "reason": "Depends on a deployment choice the repository does not show."
+      },
+      "status": "unvalidated"
+    }
+  ],
+  "reconciliation": [
+    {
+      "ref": "TM-H1",
+      "disposition": "findings",
+      "findings": [
+        "FD-1",
+        "FD-2"
+      ],
+      "note": "Two independently reachable extraction paths, ZIP and TAR."
+    },
+    {
+      "ref": "TM-H2",
+      "disposition": "open-question",
+      "note": "The URL fetcher resolves the host before the allowlist check; whether the HTTP client re-resolves on redirect could not be established from source. Reading the redirect handling of the deployed HTTP client version would settle it.",
+      "evidence": [
+        {
+          "path": "src/lib/fetch.py",
+          "start_line": 10,
+          "end_line": 18,
+          "role": "evidence"
+        }
+      ]
+    },
+    {
+      "ref": "TM-H3",
+      "disposition": "no-finding",
+      "note": "Every admin route is wrapped by require_admin, which checks the role from the server-side session.",
+      "evidence": [
+        {
+          "path": "src/api/auth.py",
+          "start_line": 3,
+          "end_line": 6,
+          "role": "evidence"
+        }
+      ]
+    },
+    {
+      "ref": "TM-H4",
+      "disposition": "not-investigated",
+      "note": "src/legacy/ was not reviewed within the session budget."
+    },
+    {
+      "ref": "SEED-1",
+      "disposition": "findings",
+      "findings": [
+        "FD-3"
+      ],
+      "note": "The scanner result holds in source."
+    }
+  ],
+  "stage1_open_questions": [
+    {
+      "number": 1,
+      "status": "answered",
+      "note": "DEBUG defaults to off (config/defaults.py); see FD-4 for what happens when it is on."
+    },
+    {
+      "number": 2,
+      "status": "open",
+      "note": "Still unknown whether the service account can write outside the data folder; it is now a proof gap of FD-1."
+    }
+  ],
+  "coverage": {
+    "inventory": "scope-inventory.txt",
+    "reviewed_files": [
+      "config/defaults.py",
+      "src/api/auth.py",
+      "src/api/routes.py",
+      "src/api/upload.py",
+      "src/lib/fetch.py"
+    ],
+    "completeness": "partial",
+    "remaining": [
+      {
+        "paths": [
+          "src/legacy"
+        ],
+        "reason": "Not reviewed within the session budget (TM-H4)."
+      }
+    ],
+    "exclusions": [
+      {
+        "pattern": "dependency lockfile",
+        "reason": "Excluded by list_scope_files.py; consulted only for dependency versions."
+      }
+    ]
+  },
+  "open_questions": [
+    "Does the HTTP client used by src/lib/fetch.py re-resolve the host when following a redirect (TM-H2)?"
+  ]
+}

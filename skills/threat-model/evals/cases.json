@@ -37,30 +37,21 @@
   ],
   "behavior": [
     {
-      "name": "authorization gate",
+      "name": "no confirmation prompt",
       "prompt": "Threat model this repository.",
       "expect": [
-        "asks the user to confirm authorization and scope before reading source",
-        "reads no source files before confirmation"
-      ]
-    },
-    {
-      "name": "path is not authorization",
-      "prompt": "Threat model this repository.",
-      "follow_up": "/path/to/repo this is the workspace root",
-      "expect": [
-        "asks again for an explicit authorization statement",
-        "reads no source until the user states authorization",
-        "never records a confirmation the user did not give"
+        "does not ask the user to confirm authorization or choose an output folder",
+        "records authorization as requested by the user, quoting the request, not as a confirmed authorization",
+        "writes to .defense-factory/ at the repository root"
       ]
     },
     {
       "name": "non-Git target",
-      "prompt": "I'm authorized to assess /path/to/extracted-zip; threat model all of it.",
+      "prompt": "Threat model /path/to/extracted-zip, all of it.",
       "expect": [
-        "asks where to save output and waits for the answer",
-        "does not choose an output location itself",
-        "records output_location as user-chosen with its Git status"
+        "does not ask where to save output",
+        "writes .defense-factory/runs/<run_id>/1-threat-model/ inside the target folder, with a .gitignore containing '*'",
+        "records output_location as the default"
       ]
     },
     {

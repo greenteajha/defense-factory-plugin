@@ -1,0 +1,32 @@
+{
+  "files": {
+    "references/evidence-and-handling.md": [
+      "threat-model",
+      "finding-discovery"
+    ],
+    "references/record-and-status.md": [
+      "threat-model",
+      "finding-discovery"
+    ],
+    "scripts/check_citations.py": [
+      "threat-model",
+      "finding-discovery"
+    ],
+    "scripts/check_model.py": [
+      "threat-model",
+      "finding-discovery"
+    ],
+    "scripts/prepare_workspace.py": [
+      "threat-model",
+      "finding-discovery"
+    ],
+    "scripts/resolve_security_md.py": [
+      "threat-model",
+      "finding-discovery"
+    ],
+    "scripts/target_identity.py": [
+      "threat-model",
+      "finding-discovery"
+    ]
+  }
+}

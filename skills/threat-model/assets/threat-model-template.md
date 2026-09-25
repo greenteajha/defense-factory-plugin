@@ -12,7 +12,7 @@ target_kind: "<git_revision | git_worktree | directory_snapshot>"
 version: "<commit, or snapshot digest>"
 revision: "<commit, if any>"
 scope: whole-repository      # or a list of repository-relative paths
-authorization: "<who confirmed, when, how; quote the user's words>"
+authorization: "<requested by the user in session on <date>: \"<their request>\">"
 output_location: "<default .defense-factory (Git-ignored) | user-chosen: path (ignored or not)>"
 source: generated           # generated | reused | supplied | supplied-revised | repository-guidance
 inputs: []                  # labels of supplied models, knowledge bases, user context, policies
@@ -23,7 +23,7 @@ assumptions: []
 coverage_gaps: []
 open_questions: 0
 hypotheses: {critical: 0, high: 0, medium: 0, low: 0}
-next_action: "Stage 2: candidate discovery, starting from the highest-priority hypotheses."
+next_action: "Stage 2: finding discovery, starting from the highest-priority hypotheses."
 ---
 
 # Threat model: <product or repository name>

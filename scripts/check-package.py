@@ -8,6 +8,7 @@ Client rules are reproduced from primary sources, noted beside each section. The
 what each client accepts; they do not replace the live smoke tests in RELEASING.md.
 """
 
+import importlib.util
 import json
 import re
 import sys
@@ -473,6 +474,16 @@ if isinstance(openai, dict):
         check(key not in openai,
               f"plugin.json: com.openai.{key} not yet covered by check-package.py; add its checks first")
 
+
+# Shared skill resources -------------------------------------------------------------------
+# Plugin guideline "Shared skill resources": masters in shared/, an identical committed copy in
+# each skill listed in shared/manifest.json. The rules live in sync-shared.py so the check and
+# the sync can never disagree.
+
+_spec = importlib.util.spec_from_file_location("sync_shared", Path(__file__).resolve().parent / "sync-shared.py")
+sync_shared = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(sync_shared)
+errors.extend(sync_shared.problems(ROOT))
 
 if errors:
     print("Package checks failed:", file=sys.stderr)

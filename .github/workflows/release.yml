@@ -1,0 +1,29 @@
+name: Release packages
+
+# On a version tag, build every install package from the tagged commit and attach them to a
+# draft GitHub Release. A maintainer adds the notes and client test results, then publishes.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s tests
+      - name: Build packages for the tagged version
+        run: python3 scripts/package-release.py --ref "$GITHUB_REF_NAME" --expect-version "${GITHUB_REF_NAME#v}" --out-dir "$RUNNER_TEMP/packages"
+      - name: Attach packages to a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --draft --verify-tag --title "$GITHUB_REF_NAME" \
+            --notes "Draft: add the change summary and client test results from RELEASING.md before publishing." \
+            "$RUNNER_TEMP"/packages/*

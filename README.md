@@ -20,6 +20,7 @@ docs/threat-model-parity.md         capability map against Codex Security's thre
 .claude-plugin/marketplace.json     Claude Code marketplace catalog
 .agents/plugins/marketplace.json    local ChatGPT/Codex catalog
 scripts/check-package.py            offline package checks for the core and each client
+scripts/package-release.py          builds a verified package for each file-based install route
 scripts/schemas/                    vendored Agent Plugins 1.0.0 schemas (Apache-2.0)
 tests/                              regression tests for the package check
 ```
@@ -28,11 +29,12 @@ tests/                              regression tests for the package check
 
 | Client surface | Route | Status for this candidate |
 | --- | --- | --- |
-| Claude Code | Add the repository as a marketplace with `/plugin marketplace add greenteajha/defense-factory-plugin`, then `/plugin install defense-factory-plugin@defense-factory`. For local use, clone the repository and run `claude --plugin-dir /absolute/path/to/defense-factory-plugin`. | Catalog validated and installs from a local marketplace; live skill activation still needs a smoke test. |
-| ChatGPT desktop / Codex local | Add the repository as a plugin marketplace with `codex plugin marketplace add greenteajha/defense-factory-plugin`, then install and enable **Defense Factory** in the Plugins Directory. The included local catalog points to this repository root. | Catalog prepared; live client activation still needs a smoke test. |
-| Cursor plugin client | Clone/download the repository and import its root `plugin.json` using Cursor's plugin flow. Marketplace publication is separate. | Standard package prepared; live client activation still needs a smoke test. |
+| Claude Code | Add the repository as a marketplace with `/plugin marketplace add greenteajha/defense-factory-plugin`, then `/plugin install defense-factory-plugin@defense-factory`. For local use, clone the repository and run `claude --plugin-dir /absolute/path/to/defense-factory-plugin`, or unzip the `-claude-` release package and point `--plugin-dir` at it. Invoke with `/defense-factory-plugin:threat-model`. | Skill activation and a full threat-model run confirmed in a live test with `--plugin-dir`. |
+| ChatGPT desktop / Codex (upload) | In Plugins, choose **Add**, then **Upload plugin archive**, and select the `-chatgpt-` release package. Do not upload the repository itself: the uploader rejects archives that contain `.agents/plugins/marketplace.json`. | Upload of the plugin-only package confirmed; skill activation not yet tested. |
+| ChatGPT desktop / Codex (marketplace) | In Plugins, choose **Add**, then **Add a marketplace**, with `greenteajha/defense-factory-plugin`; or run `codex plugin marketplace add greenteajha/defense-factory-plugin` and `codex plugin add defense-factory-plugin@defense-factory`. Uses `.agents/plugins/marketplace.json`. | Catalog prepared; not yet tested. |
+| Cursor | Unzip the `-cursor-` release package (or copy the repository without `.git`) into `~/.cursor/plugins/local/defense-factory-plugin/`, then run **Developer: Reload Window**. Cursor ignores symlinks that point outside that folder. Marketplace publication is separate. | Not yet tested. |
 
-The target client must support plugins and skills. A GitHub download by itself does not activate any skill. ChatGPT web/workspace distribution and Claude or Cursor marketplace publication are separate review and installation paths; this candidate does not claim those routes. Repository and execution access come from the host, not this package.
+Release packages are built by `scripts/package-release.py` and attached to each GitHub Release; see [RELEASING.md](RELEASING.md#packages). The target client must support plugins and skills. A GitHub download by itself does not activate any skill. ChatGPT web/workspace distribution and Claude or Cursor marketplace publication are separate review and installation paths; this candidate does not claim those routes. Repository and execution access come from the host, not this package.
 
 Installing this candidate adds the `threat-model` skill. Ask for a threat model of an authorized repository, or invoke the skill by name. Skills for later stages will be added under `skills/` as they are implemented.
 

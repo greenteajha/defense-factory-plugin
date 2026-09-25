@@ -36,7 +36,5 @@ Never upload the repository itself: ChatGPT's Upload plugin archive rejects an a
 | --- | --- |
 | `<plugin>-chatgpt-vX.Y.Z.zip` | ChatGPT desktop / Codex: Add, then Upload plugin archive |
 | `<plugin>-claude-vX.Y.Z.zip` | Claude Code without Git: unzip, then `claude --plugin-dir <folder>` or `/plugin marketplace add <folder>` |
-| `<plugin>-cursor-vX.Y.Z.zip` | Cursor: unzip into `~/.cursor/plugins/local/<plugin>/`, then reload the window |
-| `<skill>-vX.Y.Z.zip` | Single-skill upload where a client accepts one (unverified until tested) |
 
-Git-based routes (Claude Code and Codex marketplaces, ChatGPT's Add a marketplace) read the repository directly and need no package. When a new top-level file or folder is added, the packager stops until it is classified as plugin, adapter, or repository content. This repository's `scripts/check-package.py` runs as part of every package build.
+Git-based routes (Claude Code and Codex marketplaces, ChatGPT's Add a marketplace, Cursor's GitHub Repository) read the repository directly and need no package. No per-skill zips are built. When a new top-level file or folder is added, the packager stops until it is classified as plugin, adapter, or repository content. This repository's `scripts/check-package.py` runs as part of every package build.

@@ -37,6 +37,10 @@
     {
       "prompt": "What is CWE-22?",
       "activates": false
+    },
+    {
+      "prompt": "Do a Defense Factory review of this repository.",
+      "activates": false
     }
   ],
   "behavior": [

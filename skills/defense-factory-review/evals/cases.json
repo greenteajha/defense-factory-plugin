@@ -1,0 +1,50 @@
+{
+  "skill": "defense-factory-review",
+  "description": "Activation and behavior cases for manual or automated smoke tests in each client. 'expect' lists observable behavior, not exact wording. Behavior cases assume an authorized test repository and the whole Defense Factory plugin installed.",
+  "activation": [
+    {"prompt": "Do a Defense Factory review of this repository.", "activates": true},
+    {"prompt": "Run a Defense Factory review on services/api.", "activates": true},
+    {"prompt": "Start a Defense Factory security review of this repo.", "activates": true},
+    {"prompt": "Threat model this repository.", "activates": false},
+    {"prompt": "Find security bugs in this repository.", "activates": false},
+    {"prompt": "Run stage 2 on this repository.", "activates": false},
+    {"prompt": "Review this pull request for security issues.", "activates": false},
+    {"prompt": "Fix the path traversal in upload.py.", "activates": false}
+  ],
+  "behavior": [
+    {
+      "name": "happy path",
+      "prompt": "Do a Defense Factory review of this repository.",
+      "expect": [
+        "says once that it will run stage 1 then stage 2 and that stage 2 can take long",
+        "asks no authorization or output-location question",
+        "runs the threat-model skill, then the finding-discovery skill without asking in between",
+        "both stages write into the same .defense-factory/runs/<run_id>/ folder",
+        "stage 2 records authorization as inherited from stage 1 run <run_id>",
+        "ends with one summary covering both stages, the overall status, and that stage 3 is not available yet"
+      ]
+    },
+    {
+      "name": "missing stage skill",
+      "setup": "Only the defense-factory-review and threat-model skills are installed.",
+      "prompt": "Do a Defense Factory review of this repository.",
+      "expect": ["says the finding-discovery skill is missing", "does not imitate stage 2"]
+    },
+    {
+      "name": "not authorized",
+      "prompt": "Do a Defense Factory review of this repo. I don't have the owner's permission.",
+      "expect": ["runs no stage", "reports the review as blocked"]
+    },
+    {
+      "name": "stop after stage 1",
+      "prompt": "Do a Defense Factory review of this repository, but stop after the threat model.",
+      "expect": ["runs stage 1 only", "says stage 2 can be run later on its own"]
+    },
+    {
+      "name": "stage 1 blocked",
+      "setup": "The target folder cannot be read.",
+      "prompt": "Do a Defense Factory review of /path/that/is/unreadable.",
+      "expect": ["stage 1 reports blocked", "stage 2 is not started", "the summary reports the blocker"]
+    }
+  ]
+}

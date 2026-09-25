@@ -4,12 +4,14 @@
 Looks at every run copy <base>/runs/<run_id>/1-threat-model/threat-model.md, where <base> is the
 default .defense-factory folder (at the Git top level, or at --root for a target that is not a
 Git repository) or --out-dir when the user chose another location for stage 1. A model is usable
-when it passes check_model.py, its status is complete or inconclusive, and its target_id and
-version still match the code (recomputed for the model's own scope). The newest usable model, by
+when it passes check_model.py, its status is complete or inconclusive, and its version still
+matches the code exactly (recomputed for the model's own scope). A model made at another path (a
+moved or copied folder with no Git remote) is usable when its version matches; this is reported in
+notes. The newest usable model, by
 timestamp and then run ID, is selected.
 
-Prints one JSON object: threat_model (path or null), run_id, scope, status, timestamp, and
-models (every run copy found, newest first, with usable and problems).
+Prints one JSON object: threat_model (path or null), run_id, scope, status, timestamp, notes,
+and models (every run copy found, newest first, with usable, problems, and notes).
 
 Exit codes: 0 a usable model was found; 1 none is usable (none exists, or all are stale or
 invalid: offer to run the threat-model skill); 2 bad arguments.
@@ -29,18 +31,20 @@ import target_identity  # noqa: E402
 
 
 def assess(path, repo_root):
-    """Return (header, problems) for one stage 1 run copy."""
+    """Return (header, problems, notes) for one stage 1 run copy."""
     try:
         text = path.read_text(encoding="utf-8")
         header, _ = normalize_findings.split_model(text)
     except (OSError, UnicodeDecodeError, ValueError) as exc:
-        return {}, [f"cannot read: {exc}"]
+        return {}, [f"cannot read: {exc}"], []
     problems = [f"fails check_model.py: {problem}" for problem in check_model.check(text)]
     if header.get("status") not in ("complete", "inconclusive"):
         problems.append(f"status {header.get('status')!r} cannot start stage 2")
+    notes = []
     if not problems:
-        problems += check_findings.identity_problems(repo_root, header.get("scope"), header, "stale")
-    return header, problems
+        identity_problems, notes = check_findings.model_identity(repo_root, header)
+        problems += identity_problems
+    return header, problems, notes
 
 
 def main():
@@ -56,10 +60,10 @@ def main():
 
     models = []
     for path in sorted((base / "runs").glob("*/1-threat-model/threat-model.md")):
-        header, problems = assess(path, repo_root)
+        header, problems, notes = assess(path, repo_root)
         models.append({"path": str(path), "run_id": path.parent.parent.name, "timestamp": str(header.get("timestamp", "")),
                        "status": header.get("status"), "scope": header.get("scope"),
-                       "usable": not problems, "problems": problems})
+                       "usable": not problems, "problems": problems, "notes": notes})
     models.sort(key=lambda model: (model["timestamp"], model["run_id"]), reverse=True)
     chosen = next((model for model in models if model["usable"]), None)
     print(json.dumps({
@@ -68,6 +72,7 @@ def main():
         "scope": chosen["scope"] if chosen else None,
         "status": chosen["status"] if chosen else None,
         "timestamp": chosen["timestamp"] if chosen else None,
+        "notes": chosen["notes"] if chosen else [],
         "models": models,
     }, indent=2))
     return 0 if chosen else 1

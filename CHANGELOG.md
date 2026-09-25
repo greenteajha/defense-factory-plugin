@@ -2,6 +2,12 @@
 
 All notable changes are recorded here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - unreleased
+
+- Added the `defense-factory-review` skill: when the user asks for a Defense Factory review, it runs stage 1 (threat model) and then stage 2 (finding discovery) in one run without further prompts, and reports both stages in one summary. The `threat-model` and `finding-discovery` skills now describe themselves as running their stage on its own, so a review request goes to the new skill.
+- Fixed: stage 2 rejected a threat model made on a moved or copied folder (for example in a cloud workspace) as stale, because a folder without a Git remote is identified by its absolute path. The model is now accepted when its version matches the code exactly, with a "same code, different location" note that the stage 2 record keeps as an assumption. A different Git repository is still rejected, and stale messages now say whether the code changed or the repository differs.
+- Because the `threat-model` skill's description changed, models stored by 0.3.0 are not reused; a new model is generated.
+
 ## [0.3.0] - 2026-09-26
 
 Adds stage 2 (finding discovery) as the `finding-discovery` skill and removes the stage 1 confirmation prompts. Tested live in Cursor by the maintainer; Claude Code and ChatGPT/Codex have not yet been tested live with this version. Known limitation: for a folder that is not a Git repository, the target identity depends on the folder's absolute path, so a threat model made on a copy of the folder in another location (for example a cloud workspace) is reported as stale by stage 2.

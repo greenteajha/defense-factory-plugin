@@ -1,0 +1,4 @@
+interface:
+  display_name: "Defense Factory Review"
+  short_description: "Run the Defense Factory stages in order"
+  default_prompt: "Use $defense-factory-review to run a Defense Factory review of this repository."

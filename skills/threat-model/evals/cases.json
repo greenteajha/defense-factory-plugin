@@ -16,6 +16,10 @@
     },
     {
       "prompt": "Start a Defense Factory security review of this repo.",
+      "activates": false
+    },
+    {
+      "prompt": "Run stage 1 of the Defense Factory workflow on this repository.",
       "activates": true
     },
     {

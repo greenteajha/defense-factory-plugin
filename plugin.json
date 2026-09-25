@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "defense-factory-plugin",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Evidence-led application security workflows for authorized repositories.",
   "author": {
     "name": "Jeremy Teo"
@@ -18,9 +18,10 @@
         "displayName": "Defense Factory",
         "shortDescription": "Evidence-led application security workflows",
         "defaultPrompt": [
+          "Run a Defense Factory review of this repository.",
           "Build a threat model of this repository."
         ],
-        "longDescription": "Guides authorized, evidence-led application security work across threat modeling, finding discovery, isolated validation, patch preparation, human review, and revalidation. Version 0.3.0 implements stage 1 (threat-model) and stage 2 (finding-discovery); later stages are in design.",
+        "longDescription": "Guides authorized, evidence-led application security work across threat modeling, finding discovery, isolated validation, patch preparation, human review, and revalidation. Version 0.4.0 implements stage 1 (threat-model) and stage 2 (finding-discovery), and runs them in order when you ask for a Defense Factory review (defense-factory-review); later stages are in design.",
         "developerName": "Jeremy Teo",
         "category": "Productivity",
         "capabilities": [

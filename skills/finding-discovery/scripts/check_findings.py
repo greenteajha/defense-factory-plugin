@@ -8,10 +8,10 @@ Checks, in order:
   - the record's target_id, target_kind, and version match the target now (target_identity.py),
     and security-guidance.md exists in the stage folder;
   - with source stage-1-record: the stage 1 model exists, its sha256 matches, it passes
-    check_model.py, its status is complete or inconclusive, its run_id and target_id match, its
-    timestamp is not later than this record's, it is
-    not stale (its version still matches the code, recomputed for its own scope), and this run's
-    scope lies within its scope; with source narrow-scan: named paths, no model, and a coverage
+    check_model.py, its status is complete or inconclusive, its run_id matches, its timestamp is
+    not later than this record's, its version still matches the code (recomputed for its own
+    scope), its target_id matches or differs only because the folder moved (local-path identity
+    with an identical version), and this run's scope lies within its scope; with source narrow-scan: named paths, no model, and a coverage
     gap that says so;
   - authorization quotes the user's request; an inherited authorization names the stage 1 run,
     shares its run_id, and repeats the stage 1 record's authorization value exactly;
@@ -95,6 +95,33 @@ def identity_problems(repo, scope, record, label):
             for field in ("target_id", "target_kind", "version") if record.get(field) != current[field]]
 
 
+LOCATION_NOTE = ("same code, different location: the stage 1 model was made at another path (a moved or copied "
+                 "folder) and its version matches the code exactly")
+
+
+def model_identity(repo, header):
+    """Compare a stage 1 model with the target now. Return (problems, notes).
+
+    The version (commit, or content digest for the model's own scope) must match exactly. A
+    different target_id is accepted when the target is identified by its local path, because
+    moving or copying a folder changes that path but not the code; it is reported as a note.
+    A different target_id for a target identified by its remote URL is a different repository.
+    """
+    try:
+        current = target_identity.identify(repo, scope_items(header.get("scope")))
+    except ValueError as exc:
+        return [f"cannot identify the target ({exc})"], []
+    if header.get("version") != current["version"]:
+        return [f"the code changed since the model was built (version {header.get('version')!r}, "
+                f"now {current['version']!r})"], []
+    if header.get("target_id") == current["target_id"]:
+        return [], []
+    if current["identity_source"] == "local-path":
+        return [], [LOCATION_NOTE]
+    return [f"the model is for a different repository (target_id {header.get('target_id')!r}, "
+            f"now {current['target_id']!r})"], []
+
+
 def check_threat_model(data, findings_dir, repo, problems):
     """Return (stage 1 header, {TM-H: priority}); both empty when there is no usable model."""
     record, ref = data["record"], data["threat_model"]
@@ -124,11 +151,7 @@ def check_threat_model(data, findings_dir, repo, problems):
         problems.append(f"stage 1 model status {header.get('status')!r} cannot start stage 2")
     if header.get("run_id") != ref["run_id"]:
         problems.append("threat_model.run_id does not match the stage 1 model's run_id")
-    if header.get("target_id") != record["target_id"]:
-        problems.append("stage 1 model is for a different target")
-    else:
-        problems += identity_problems(repo, header.get("scope"), header,
-                                      "stage 1 model is stale or inconsistent")
+    problems += [f"stage 1 model: {problem}" for problem in model_identity(repo, header)[0]]
     if not within(record["scope"], header.get("scope")):
         problems.append("record.scope is wider than the stage 1 model's scope")
     return header, normalize_findings.stage1_hypotheses(text)

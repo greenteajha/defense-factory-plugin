@@ -3,7 +3,9 @@
 
 With --threat-model (the stage 1 run copy, normally <run>/1-threat-model/threat-model.md), the
 model must pass check_model.py, have status complete or inconclusive, and still match the code:
-its target_id and version are recomputed for its own scope. A requested --scope must lie inside
+its version is recomputed for its own scope and must be identical. A different target_id is
+accepted only when the folder moved or was copied (local-path identity); that is reported in
+notes and recorded as an assumption. A requested --scope must lie inside
 the model's scope; without --scope, the model's scope is used. If any of this fails, nothing is
 written and the problems are reported, so the user can choose between rerunning stage 1 and a
 narrow scan.
@@ -22,7 +24,7 @@ Authorization is pre-filled as inherited when the model belongs to the same run;
 user's request is left to fill.
 
 Prints one JSON object: created, inventory ({included, excluded}), hypotheses ([{id, priority}]),
-stage1_open_questions, authorization_inherited, problems.
+stage1_open_questions, authorization_inherited, notes, problems.
 
 Exit codes: 0 created; 1 the threat model cannot be used (nothing written); 2 bad arguments;
 3 findings.json already exists (never overwritten).
@@ -64,8 +66,8 @@ def open_question_texts(body):
     return re.findall(r"^\d+\.\s+(.*)$", section.group(1), re.MULTILINE) if section else []
 
 
-def read_model(path, repo_root, requested_scope, problems):
-    """Return (header, body, raw bytes) of a usable model, recording every problem."""
+def read_model(path, repo_root, requested_scope, problems, notes):
+    """Return (header, body, raw bytes) of a usable model, recording every problem and note."""
     try:
         raw = path.read_bytes()
         text = raw.decode("utf-8")
@@ -78,7 +80,9 @@ def read_model(path, repo_root, requested_scope, problems):
         problems.append("the file is not a stage 1 threat-model record")
     if header.get("status") not in ("complete", "inconclusive"):
         problems.append(f"stage 1 status {header.get('status')!r} cannot start stage 2")
-    problems += check_findings.identity_problems(repo_root, header.get("scope"), header, "stage 1 model is stale")
+    identity_problems, identity_notes = check_findings.model_identity(repo_root, header)
+    problems += [f"stage 1 model: {problem}" for problem in identity_problems]
+    notes += identity_notes
     if requested_scope is not None and not check_findings.within(requested_scope, header.get("scope")):
         problems.append("the requested scope is wider than the stage 1 model's scope")
     return header, body, raw
@@ -107,10 +111,10 @@ def main():
     requested = None if scope_paths is None else ("whole-repository" if scope_paths == ["."] else scope_paths)
     run_id = stage_dir.parent.name
 
-    problems, header, body, raw = [], None, None, None
+    problems, notes, header, body, raw = [], [], None, None, None
     model = Path(args.threat_model).expanduser().resolve() if args.threat_model else None
     if model is not None:
-        header, body, raw = read_model(model, repo_root, requested, problems)
+        header, body, raw = read_model(model, repo_root, requested, problems, notes)
         scope = requested if requested is not None else (header or {}).get("scope", "whole-repository")
     else:
         if requested in (None, "whole-repository"):
@@ -165,7 +169,7 @@ def main():
             "independent_baseline": "not-performed: " + fill("reason; or replace the whole value with independent or not-independent"),
             "tools": f"Python {platform.python_version()}; {HELPERS}; " + fill("add every other helper you ran"),
             "evidence": "citations in findings.md; scope-inventory.txt; security-guidance.md",
-            "assumptions": [],
+            "assumptions": [f"Stage 1 model: {note}." for note in notes],
             "coverage_gaps": coverage_gaps,
             "next_action": fill("recommended next step, normally stage 3 validation of the highest-priority findings"),
         },
@@ -204,6 +208,7 @@ def main():
         "hypotheses": [{"id": ref, "priority": priority} for ref, priority in by_number(hypotheses)],
         "stage1_open_questions": len(questions),
         "authorization_inherited": inherited,
+        "notes": notes,
         "problems": [],
     }, indent=2))
     return 0

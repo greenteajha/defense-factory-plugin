@@ -331,7 +331,7 @@ class FindingDiscoveryTest(unittest.TestCase):
         code, problems = self.check()
         self.assertEqual(code, 1)
         self.assertTrue(any(problem.startswith("record: version") for problem in problems), problems)
-        self.assertTrue(any(problem.startswith("stage 1 model is stale or inconsistent: version") for problem in problems), problems)
+        self.assertTrue(any(problem.startswith("stage 1 model: the code changed since the model was built") for problem in problems), problems)
 
     def test_security_guidance_must_be_saved(self):
         self.normalized()
@@ -495,12 +495,39 @@ class FindingDiscoveryTest(unittest.TestCase):
         git(self.root, "commit", "-q", "-am", "change")
         code, report = self.find()
         self.assertEqual((code, report["threat_model"]), (1, None))
-        self.assertTrue(report["models"][0]["problems"][0].startswith("stale: version"), report)
+        self.assertTrue(report["models"][0]["problems"][0].startswith("the code changed since the model was built"), report)
 
     def test_find_without_runs(self):
         shutil.rmtree(self.root / ".defense-factory" / "runs")
         self.assertEqual(self.find(), (1, {"threat_model": None, "run_id": None, "scope": None, "status": None,
-                                           "timestamp": None, "models": []}))
+                                           "timestamp": None, "notes": [], "models": []}))
+
+    def moved_model(self):
+        """Pretend the stage 1 model was made on a copy of this folder at another path (for example a
+        cloud workspace): same code and version, different local-path target_id."""
+        self.model.write_text(self.model.read_text().replace(self.identity["target_id"], "sha256:" + "ab" * 32))
+
+    def test_moved_folder_model_is_usable_with_a_note(self):
+        self.moved_model()
+        code, report = self.find()
+        self.assertEqual((code, report["run_id"]), (0, RUN))
+        self.assertEqual(len(report["notes"]), 1)
+        self.assertIn("same code, different location", report["notes"][0])
+        result = self.start("--threat-model", str(self.model))
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn("same code, different location", json.loads(result.stdout)["notes"][0])
+        self.assertIn("same code, different location", json.loads(self.findings.read_text())["record"]["assumptions"][0])
+
+    def test_moved_folder_model_passes_the_final_check(self):
+        self.moved_model()
+        self.normalized()
+        self.assertEqual(self.check(), (0, []))
+
+    def test_different_repository_is_still_rejected(self):
+        git(self.root, "remote", "add", "origin", "https://github.com/example/other.git")
+        code, report = self.find()
+        self.assertEqual(code, 1)
+        self.assertTrue(report["models"][0]["problems"][0].startswith("the model is for a different repository"), report)
 
     # start_findings.py --------------------------------------------------------------------------
 
@@ -546,7 +573,8 @@ class FindingDiscoveryTest(unittest.TestCase):
         git(self.root, "commit", "-q", "-am", "change")
         result = self.start("--threat-model", str(self.model))
         self.assertEqual(result.returncode, 1)
-        self.assertTrue(any(problem.startswith("stage 1 model is stale: version") for problem in json.loads(result.stdout)["problems"]))
+        self.assertTrue(any(problem.startswith("stage 1 model: the code changed since the model was built")
+                            for problem in json.loads(result.stdout)["problems"]))
         self.assertFalse(self.findings.exists())
 
         self.identity = json.loads(run("target_identity.py", "--root", str(self.root)).stdout)

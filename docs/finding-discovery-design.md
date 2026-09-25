@@ -145,6 +145,8 @@ All use only the Python 3.9+ standard library, print JSON, and document their ex
 
 Known limit: for a non-Git target, a user-chosen output folder inside the target that is not named `.defense-factory` changes the target's snapshot digest as outputs are written, so `check_findings.py` reports the record as stale. The default `.defense-factory/` folder does not have this problem.
 
+Moved or copied folders (0.4.0): a target without a Git remote is identified by its absolute path, so a model made on a copy elsewhere (for example a cloud workspace) has a different `target_id`. The model is accepted when its version (commit, or content digest for its own scope) matches exactly; `find_threat_model.py` and `start_findings.py` report "same code, different location" and the record keeps it as an assumption. A different `target_id` for a target identified by its remote URL is a different repository and is rejected.
+
 ## Skill layout
 
 ```text

@@ -1,6 +1,6 @@
 ---
 name: threat-model
-description: Build, reuse, or revise an evidence-backed threat model of an authorized code repository, folder, or path. Maps architecture, assets, entry points, trust boundaries, effective configuration, and attacker capabilities, then records prioritized attack-path hypotheses with file:line evidence and a severity calibration. Use when the user asks to threat model a repository, service, or directory; map its attack surface, trust boundaries, or security assumptions; create, update, or persist a reusable threat model; or start stage 1 (scope and threat model) of a Defense Factory security review. Do not use to hunt for, confirm, exploit, or fix specific vulnerabilities, or to review a single diff.
+description: Build, reuse, or revise an evidence-backed threat model of an authorized code repository, folder, or path. Maps architecture, assets, entry points, trust boundaries, effective configuration, and attacker capabilities, then records prioritized attack-path hypotheses with file:line evidence and a severity calibration. Use when the user asks to threat model a repository, service, or directory; map its attack surface, trust boundaries, or security assumptions; create, update, or persist a reusable threat model; or run stage 1 (scope and threat model) of the Defense Factory workflow on its own. Do not use for a full Defense Factory review (the defense-factory-review skill runs the stages in order), to hunt for, confirm, exploit, or fix specific vulnerabilities, or to review a single diff.
 ---
 
 # Threat model

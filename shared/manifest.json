@@ -1,24 +1,41 @@
 {
   "files": {
+    "assets/findings.schema.json": [
+      "finding-discovery",
+      "finding-validation"
+    ],
     "references/evidence-and-handling.md": [
       "threat-model",
-      "finding-discovery"
+      "finding-discovery",
+      "finding-validation"
     ],
     "references/record-and-status.md": [
       "threat-model",
-      "finding-discovery"
+      "finding-discovery",
+      "finding-validation"
     ],
     "scripts/check_citations.py": [
       "threat-model",
-      "finding-discovery"
+      "finding-discovery",
+      "finding-validation"
+    ],
+    "scripts/check_findings.py": [
+      "finding-discovery",
+      "finding-validation"
     ],
     "scripts/check_model.py": [
       "threat-model",
-      "finding-discovery"
+      "finding-discovery",
+      "finding-validation"
+    ],
+    "scripts/normalize_findings.py": [
+      "finding-discovery",
+      "finding-validation"
     ],
     "scripts/prepare_workspace.py": [
       "threat-model",
-      "finding-discovery"
+      "finding-discovery",
+      "finding-validation"
     ],
     "scripts/resolve_security_md.py": [
       "threat-model",
@@ -26,7 +43,8 @@
     ],
     "scripts/target_identity.py": [
       "threat-model",
-      "finding-discovery"
+      "finding-discovery",
+      "finding-validation"
     ]
   }
 }

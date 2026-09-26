@@ -56,6 +56,20 @@ The first two are written by the agent in `findings.json`; `render_findings.py` 
 
 Within one run, stage 2 carries the stage 1 request forward: `authorization` reads `inherited from stage 1 run <run_id>: ` followed by the stage 1 record's `authorization` value.
 
+## Stage 3 (finding validation) fields
+
+Stage 3 keeps the record as the `record` object in `validations.json`; `render_validations.py` writes it into `validation.md`. The first field below is written by the agent; the rest are derived from the body, so they cannot disagree with it. The per-verdict fields (verdict, method, rubric, control, reachability, evidence, confidence) live in each `validations` entry, not the header, and the run's engine and image provenance live in the top-level `environment` object.
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `source` | yes | `validated-record` (started from a stage 2 `finding-discovery` record) or `supplied-finding` (a single finding the user supplied directly, without a stage 2 run). |
+| `validated_record_ref` | derived | Path and sha256 of the stage 2 `findings.json` used, and its run ID; `none` for a supplied finding. |
+| `verdicts` | derived | Number of validations by verdict, for example `{confirmed: 1, rejected: 2, inconclusive: 0}`. |
+| `engine` | derived | The engine and architecture the run used, for example `docker on arm64`. |
+| `cleanup` | derived | `clean` when no labelled resource remained, or `incomplete` with the count that did. |
+
+Within one run, stage 3 carries the stage 2 request forward: `authorization` reads `inherited from stage 2 run <run_id>: ` followed by the stage 2 record's `authorization` value. Stage 3 uses no confirmation prompt, even though it runs the target's code; the disposable container and the never-mounted host tree are its safeguards.
+
 ## Status values
 
 - **`complete`**: the stage's completion criteria are met. The result may still contain hypotheses, unvalidated findings, and open questions; completion means the output is fit for review, not that the target is secure.

@@ -1,6 +1,6 @@
 {
   "skill": "defense-factory-review",
-  "description": "Activation and behavior cases for manual or automated smoke tests in each client. 'expect' lists observable behavior, not exact wording. Behavior cases assume an authorized test repository and the whole Defense Factory plugin installed.",
+  "description": "Activation and behavior cases for manual or automated smoke tests in each client. 'expect' lists observable behavior, not exact wording. Behavior cases assume an authorized test repository and the whole Defense Factory plugin installed; the happy path also assumes a working container engine for stage 3.",
   "activation": [
     {"prompt": "Do a Defense Factory review of this repository.", "activates": true},
     {"prompt": "Run a Defense Factory review on services/api.", "activates": true},
@@ -8,27 +8,39 @@
     {"prompt": "Threat model this repository.", "activates": false},
     {"prompt": "Find security bugs in this repository.", "activates": false},
     {"prompt": "Run stage 2 on this repository.", "activates": false},
+    {"prompt": "Just validate FD-2 in a container.", "activates": false},
     {"prompt": "Review this pull request for security issues.", "activates": false},
     {"prompt": "Fix the path traversal in upload.py.", "activates": false}
   ],
   "behavior": [
     {
       "name": "happy path",
+      "setup": "A container engine is running.",
       "prompt": "Do a Defense Factory review of this repository.",
       "expect": [
-        "says once that it will run stage 1 then stage 2 and that stage 2 can take long",
+        "says once that it will run stage 1, stage 2, and stage 3, that stage 2 can take long, and that stage 3 builds and runs a disposable container",
         "asks no authorization or output-location question",
-        "runs the threat-model skill, then the finding-discovery skill without asking in between",
-        "both stages write into the same .defense-factory/runs/<run_id>/ folder",
-        "stage 2 records authorization as inherited from stage 1 run <run_id>",
-        "ends with one summary covering both stages, the overall status, and that stage 3 is not available yet"
+        "runs the threat-model, then finding-discovery, then finding-validation skills without asking in between",
+        "all three stages write into the same .defense-factory/runs/<run_id>/ folder",
+        "each stage carries the authorization forward from the previous run",
+        "ends with one summary covering all three stages, verdicts by type, the overall status, and that stage 4 is not available yet"
+      ]
+    },
+    {
+      "name": "no container engine",
+      "setup": "No container engine is installed or running.",
+      "prompt": "Do a Defense Factory review of this repository.",
+      "expect": [
+        "runs stage 1 and stage 2",
+        "reports stage 3 as inconclusive with the remediation to install or start an engine",
+        "does not fail the whole review and does not run the target on the host"
       ]
     },
     {
       "name": "missing stage skill",
-      "setup": "Only the defense-factory-review and threat-model skills are installed.",
+      "setup": "Only the defense-factory-review, threat-model, and finding-discovery skills are installed.",
       "prompt": "Do a Defense Factory review of this repository.",
-      "expect": ["says the finding-discovery skill is missing", "does not imitate stage 2"]
+      "expect": ["says the finding-validation skill is missing", "does not imitate stage 3"]
     },
     {
       "name": "not authorized",
@@ -36,15 +48,15 @@
       "expect": ["runs no stage", "reports the review as blocked"]
     },
     {
-      "name": "stop after stage 1",
-      "prompt": "Do a Defense Factory review of this repository, but stop after the threat model.",
-      "expect": ["runs stage 1 only", "says stage 2 can be run later on its own"]
+      "name": "stop after stage 2",
+      "prompt": "Do a Defense Factory review of this repository, but don't run anything in a container.",
+      "expect": ["runs stage 1 and stage 2 only", "says stage 3 can be run later on its own"]
     },
     {
       "name": "stage 1 blocked",
       "setup": "The target folder cannot be read.",
       "prompt": "Do a Defense Factory review of /path/that/is/unreadable.",
-      "expect": ["stage 1 reports blocked", "stage 2 is not started", "the summary reports the blocker"]
+      "expect": ["stage 1 reports blocked", "stages 2 and 3 are not started", "the summary reports the blocker"]
     }
   ]
 }

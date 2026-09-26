@@ -1,0 +1,126 @@
+{
+  "record": {
+    "record_version": 1,
+    "stage": "3-finding-validation",
+    "status": "inconclusive",
+    "run_id": "20260926T090000Z",
+    "timestamp": "2026-09-26T09:30:00Z",
+    "actor": "Example agent (Claude Code); requested by the user",
+    "model": "Example Model 1.0",
+    "skill_version": "finding-validation/sha256:0123456789abcdef",
+    "target_id": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "target_kind": "git_revision",
+    "version": "0123456789abcdef0123456789abcdef01234567",
+    "revision": "0123456789abcdef0123456789abcdef01234567",
+    "scope": "whole-repository",
+    "authorization": "inherited from stage 2 run 20260926T090000Z: requested by the user in session on 2026-09-26: \"Do a Defense Factory review of this repository\"",
+    "output_location": "default .defense-factory (Git-ignored)",
+    "source": "validated-record",
+    "inputs": [],
+    "tools": "Python 3.12; prepare_workspace.py, start_validation.py, check_environment.py, export_target.py, cleanup_run.py; docker 29.6.2",
+    "evidence": "citations in validation.md; artifacts/ per finding; container-build/",
+    "assumptions": [],
+    "coverage_gaps": [],
+    "next_action": "Human triage of the confirmed findings; FD-1 first."
+  },
+  "validated_record": {
+    "path": "../2-finding-discovery/findings.json",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "run_id": "20260926T090000Z"
+  },
+  "environment": {
+    "host_os": "darwin",
+    "host_arch": "arm64",
+    "engine": "docker",
+    "engine_version": "29.6.2",
+    "base_image": "python:3.12-slim",
+    "base_image_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "emulation": "none",
+    "code_source": "git-archive:0123456789abcdef0123456789abcdef01234567",
+    "limits": { "memory": "2g", "cpus": "2", "pids": 512, "timeout_seconds": 600 },
+    "network_setup": "on",
+    "network_testing": "off",
+    "cleanup": {
+      "label": "com.defensefactory.run=20260926T090000Z",
+      "removed": { "containers": 2, "images": 1, "volumes": 0, "networks": 1 },
+      "remaining": 0
+    }
+  },
+  "validations": [
+    {
+      "finding_id": "FD-2",
+      "finding_key": "url-fetch-internal-hosts",
+      "finding_fingerprint": "fp:1111111111111111",
+      "title": "URL fetch reaches internal hosts (SSRF)",
+      "verdict": "rejected",
+      "method": "interface-reproduction",
+      "reproduced": true,
+      "rubric": [
+        { "criterion": "A crafted URL to 127.0.0.1 returns internal content", "result": "fail" },
+        { "criterion": "The allowlist blocks link-local and loopback destinations", "result": "pass" }
+      ],
+      "control": "A benign external URL fetched normally (200), establishing the feature works.",
+      "reachability": "The request reached the destination check at `src/lib/fetch.py:10` before the client call.",
+      "repeat_confirmed": false,
+      "evidence": "Every crafted internal destination (127.0.0.1, 169.254.169.254, ::1) was rejected with 400 by the allowlist at `src/lib/fetch.py:10`; the outbound client was never reached.",
+      "counterevidence_or_proof_gap": "The allowlist canonicalizes and rejects loopback, link-local, and private ranges before the request; redirects are re-checked.",
+      "setup_notes": "Installed requirements; started the app on an internal port with the network off during testing.",
+      "remaining_uncertainty": "A future config that disables the allowlist would reopen this; tested only the default config.",
+      "confidence": { "level": "High", "reason": "Reproduced through the real HTTP interface with the control passing and every internal target blocked." },
+      "next_step": "none",
+      "affected_version": "0123456789abcdef0123456789abcdef01234567",
+      "artifacts": ["artifacts/FD-2/http-proof.json"]
+    },
+    {
+      "finding_id": "FD-1",
+      "finding_key": "archive-member-path-zip",
+      "finding_fingerprint": "fp:0000000000000000",
+      "title": "Archive import escapes the import folder (path traversal)",
+      "verdict": "confirmed",
+      "method": "interface-reproduction",
+      "reproduced": true,
+      "rubric": [
+        { "criterion": "A benign archive extracts only inside the import folder", "result": "pass" },
+        { "criterion": "An archive member whose name traverses up two directories is written outside the import folder", "result": "pass" },
+        { "criterion": "The write is observable on the container filesystem", "result": "pass" }
+      ],
+      "control": "A benign archive imported cleanly and wrote only inside the import folder, confirming normal behaviour.",
+      "reachability": "A log line shows the crafted member name reaching the join-and-write at `src/api/upload.py:24` without a containment check.",
+      "repeat_confirmed": true,
+      "evidence": "Uploading a crafted zip whose member name traverses up two directories wrote /tmp/pwned outside the import folder; reproduced twice. See the saved request and the written file.",
+      "counterevidence_or_proof_gap": "none: no normalization or containment check runs before the write.",
+      "setup_notes": "Installed requirements and started the upload service; no external network needed for the test.",
+      "remaining_uncertainty": "none",
+      "confidence": { "level": "High", "reason": "Reproduced twice through the real upload interface with a passing control and a written file outside the folder." },
+      "next_step": "none",
+      "affected_version": "0123456789abcdef0123456789abcdef01234567",
+      "artifacts": ["artifacts/FD-1/evil.zip", "artifacts/FD-1/write-proof.txt"]
+    },
+    {
+      "finding_id": "FD-3",
+      "finding_key": "admin-routes-no-role-check",
+      "finding_fingerprint": "fp:2222222222222222",
+      "title": "Admin routes without a role check",
+      "verdict": "inconclusive",
+      "method": "static-assessment",
+      "reproduced": false,
+      "rubric": [
+        { "criterion": "An unauthenticated request reaches an admin route", "result": "unknown" },
+        { "criterion": "The route performs a protected action without a role check", "result": "unknown" }
+      ],
+      "control": "Not run: the admin blueprint could not be reached without seeding an admin session, which the app's setup did not support in bounded time.",
+      "reachability": "Static tracing shows the admin blueprint at `src/api/auth.py:3` registered without a role decorator, but the runtime auth wiring could not be exercised.",
+      "repeat_confirmed": false,
+      "evidence": "Read the route registration and middleware; the role check appears absent, but the app requires an admin bootstrap step that could not be completed in the container.",
+      "counterevidence_or_proof_gap": "Could not seed an admin session in bounded setup, so the missing check could not be exercised at runtime.",
+      "setup_notes": "The app started, but seeding an admin account needed a mail service that was intentionally not started; this is a setup gap, not counterevidence.",
+      "remaining_uncertainty": "Whether a global before-request hook enforces the role; a runtime test with a seeded session would settle it.",
+      "confidence": { "level": "Low", "reason": "Static only; the runtime path could not be exercised." },
+      "next_step": "Provide a seeded admin session or a test fixture, then reproduce through the HTTP interface.",
+      "affected_version": "0123456789abcdef0123456789abcdef01234567"
+    }
+  ],
+  "open_questions": [
+    "Does any deployment disable the fetch allowlist that rejected the SSRF attempts?"
+  ]
+}

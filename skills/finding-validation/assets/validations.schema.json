@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "defense-factory://finding-validation/validations.schema.json",
+  "title": "Defense Factory stage 3 validation record (validations.json)",
+  "description": "Written by the agent, normalized by normalize_validations.py (which adds id and orders the entries), checked by check_validations.py, and rendered to validation.md by render_validations.py. Each entry gives one stage 2 finding a verdict.",
+  "type": "object",
+  "properties": {
+    "record": { "$ref": "#/$defs/record" },
+    "validated_record": {
+      "description": "The stage 2 findings.json this run validated; null for a directly supplied finding.",
+      "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/validatedRecordRef" }]
+    },
+    "environment": {
+      "description": "The container run's engine and image provenance; null before a container is built or for a blocked run.",
+      "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/environment" }]
+    },
+    "validations": { "type": "array", "items": { "$ref": "#/$defs/validation" } },
+    "open_questions": { "$ref": "#/$defs/textList" }
+  },
+  "required": ["record", "validated_record", "environment", "validations", "open_questions"],
+  "additionalProperties": false,
+  "$defs": {
+    "text": { "type": "string", "pattern": "\\S" },
+    "textList": { "type": "array", "items": { "$ref": "#/$defs/text" } },
+    "boolean": { "enum": [true, false] },
+    "findingRef": { "type": "string", "pattern": "^(FD-[1-9][0-9]*|[a-z0-9][a-z0-9._-]*)$" },
+    "record": {
+      "type": "object",
+      "properties": {
+        "record_version": { "const": 1 },
+        "stage": { "const": "3-finding-validation" },
+        "status": { "enum": ["complete", "inconclusive", "blocked"] },
+        "run_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" },
+        "timestamp": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" },
+        "actor": { "$ref": "#/$defs/text" },
+        "model": { "$ref": "#/$defs/text" },
+        "skill_version": { "type": "string", "pattern": "^finding-validation/sha256:[0-9a-f]{16}$" },
+        "target_id": { "$ref": "#/$defs/text" },
+        "target_kind": { "enum": ["git_revision", "git_worktree", "directory_snapshot"] },
+        "version": { "$ref": "#/$defs/text" },
+        "revision": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/text" }] },
+        "scope": {
+          "anyOf": [
+            { "const": "whole-repository" },
+            { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/text" } }
+          ]
+        },
+        "authorization": { "$ref": "#/$defs/text" },
+        "output_location": { "$ref": "#/$defs/text" },
+        "source": { "enum": ["validated-record", "supplied-finding"] },
+        "inputs": { "$ref": "#/$defs/textList" },
+        "tools": { "$ref": "#/$defs/text" },
+        "evidence": { "$ref": "#/$defs/text" },
+        "assumptions": { "$ref": "#/$defs/textList" },
+        "coverage_gaps": { "$ref": "#/$defs/textList" },
+        "next_action": { "$ref": "#/$defs/text" }
+      },
+      "required": [
+        "record_version", "stage", "status", "run_id", "timestamp", "actor", "model", "skill_version",
+        "target_id", "target_kind", "version", "revision", "scope", "authorization", "output_location",
+        "source", "inputs", "tools", "evidence", "assumptions", "coverage_gaps", "next_action"
+      ],
+      "additionalProperties": false
+    },
+    "validatedRecordRef": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string", "pattern": "\\S", "description": "Relative to the folder holding validations.json, normally ../2-finding-discovery/findings.json." },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "run_id": { "type": "string", "pattern": "^[A-Za-z0-9._-]+$" }
+      },
+      "required": ["path", "sha256", "run_id"],
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "host_os": { "$ref": "#/$defs/text" },
+        "host_arch": { "$ref": "#/$defs/text" },
+        "engine": { "enum": ["docker", "podman", "nerdctl"] },
+        "engine_version": { "$ref": "#/$defs/text" },
+        "base_image": { "$ref": "#/$defs/text" },
+        "base_image_digest": { "$ref": "#/$defs/text" },
+        "emulation": { "$ref": "#/$defs/text" },
+        "code_source": { "type": "string", "pattern": "^(git-archive:.+|copied-files)$" },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "memory": { "$ref": "#/$defs/text" },
+            "cpus": { "$ref": "#/$defs/text" },
+            "pids": { "type": "integer", "minimum": 1 },
+            "timeout_seconds": { "type": "integer", "minimum": 1 }
+          },
+          "required": ["memory", "cpus", "pids", "timeout_seconds"],
+          "additionalProperties": false
+        },
+        "network_setup": { "enum": ["on", "off", "internal-only"] },
+        "network_testing": { "enum": ["on", "off", "internal-only"] },
+        "cleanup": {
+          "type": "object",
+          "properties": {
+            "label": { "$ref": "#/$defs/text" },
+            "removed": {
+              "type": "object",
+              "properties": {
+                "containers": { "type": "integer", "minimum": 0 },
+                "images": { "type": "integer", "minimum": 0 },
+                "volumes": { "type": "integer", "minimum": 0 },
+                "networks": { "type": "integer", "minimum": 0 }
+              },
+              "required": ["containers", "images", "volumes", "networks"],
+              "additionalProperties": false
+            },
+            "remaining": { "type": "integer", "minimum": 0 }
+          },
+          "required": ["label", "removed", "remaining"],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "host_os", "host_arch", "engine", "engine_version", "base_image", "base_image_digest",
+        "emulation", "code_source", "limits", "network_setup", "network_testing", "cleanup"
+      ],
+      "additionalProperties": false
+    },
+    "rubricItem": {
+      "type": "object",
+      "properties": {
+        "criterion": { "$ref": "#/$defs/text" },
+        "result": { "enum": ["pass", "fail", "unknown"] }
+      },
+      "required": ["criterion", "result"],
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "pattern": "^VD-[1-9][0-9]*$" },
+        "finding_id": { "$ref": "#/$defs/findingRef" },
+        "finding_key": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+        "finding_fingerprint": { "anyOf": [{ "type": "null" }, { "type": "string", "pattern": "^fp:[0-9a-f]{16}$" }] },
+        "title": { "$ref": "#/$defs/text" },
+        "verdict": { "enum": ["confirmed", "rejected", "inconclusive"] },
+        "method": { "enum": ["interface-reproduction", "targeted-test", "crash-or-sanitizer", "debugger-trace", "static-assessment"] },
+        "reproduced": { "$ref": "#/$defs/boolean" },
+        "rubric": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/rubricItem" } },
+        "control": { "$ref": "#/$defs/text" },
+        "reachability": { "$ref": "#/$defs/text" },
+        "repeat_confirmed": { "$ref": "#/$defs/boolean" },
+        "evidence": { "$ref": "#/$defs/text" },
+        "counterevidence_or_proof_gap": { "$ref": "#/$defs/text" },
+        "setup_notes": { "$ref": "#/$defs/text" },
+        "remaining_uncertainty": { "$ref": "#/$defs/text" },
+        "confidence": {
+          "type": "object",
+          "properties": {
+            "level": { "enum": ["High", "Medium", "Low"] },
+            "reason": { "$ref": "#/$defs/text" }
+          },
+          "required": ["level", "reason"],
+          "additionalProperties": false
+        },
+        "next_step": { "$ref": "#/$defs/text" },
+        "affected_version": { "$ref": "#/$defs/text" },
+        "artifacts": { "$ref": "#/$defs/textList" }
+      },
+      "required": [
+        "finding_id", "finding_key", "title", "verdict", "method", "reproduced", "rubric", "control",
+        "reachability", "repeat_confirmed", "evidence", "counterevidence_or_proof_gap", "setup_notes",
+        "remaining_uncertainty", "confidence", "next_step", "affected_version"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -2,11 +2,13 @@
 
 All notable changes are recorded here. Versions follow [Semantic Versioning](https://semver.org/).
 
-## [0.4.0] - unreleased
+## [0.4.0] - 2026-09-26
 
-- Added the `defense-factory-review` skill: when the user asks for a Defense Factory review, it runs stage 1 (threat model) and then stage 2 (finding discovery) in one run without further prompts, and reports both stages in one summary. The `threat-model` and `finding-discovery` skills now describe themselves as running their stage on its own, so a review request goes to the new skill.
+- Added stage 3 (isolated validation) as the `finding-validation` skill: it takes the stage 2 findings and gives each a verdict of `confirmed`, `rejected`, or `inconclusive`, backed by evidence, by building one disposable container per run on the user's own computer (Docker Desktop, Podman, Colima, or Rancher Desktop; never Apple `container`), installing the target's prerequisites, running the app and a per-finding test, then deleting everything the run created. The exact reviewed revision is copied in, never mounted; no credentials, sockets, or host environment enter the container; the network is on for setup and off by default for testing; and clean-up removes only resources carrying the run's label, so other containers (for example a MISP stack) are never touched. Setup failures are never counterevidence; a static fallback is recorded as "assessed statically, not reproduced". Includes `docs/validation-design.md`, `docs/validation-parity.md`, the `validations.json` schema and example, eight helpers (`check_environment.py`, `find_findings.py`, `start_validation.py`, `export_target.py`, `cleanup_run.py`, `normalize_validations.py`, `check_validations.py`, `render_validations.py`) with `engine.py`, `agents/openai.yaml`, and eval cases. Not yet tested live in each client.
+- The `defense-factory-review` skill now runs stage 1 (threat model), then stage 2 (finding discovery), then stage 3 (isolated validation) in one run, and reports all three in one summary. If no container engine is available it reports stages 1 and 2 and records stage 3 as `inconclusive` rather than failing the review. Earlier it ran only stages 1 and 2.
+- `findings.schema.json`, `check_findings.py`, and `normalize_findings.py` moved into `shared/` because stage 3 consumes the stage 2 record; the shared record reference gained a stage 3 section. Because the shared record reference changed, threat models and finding records stored by earlier versions are not reused.
 - Fixed: stage 2 rejected a threat model made on a moved or copied folder (for example in a cloud workspace) as stale, because a folder without a Git remote is identified by its absolute path. The model is now accepted when its version matches the code exactly, with a "same code, different location" note that the stage 2 record keeps as an assumption. A different Git repository is still rejected, and stale messages now say whether the code changed or the repository differs.
-- Because the `threat-model` skill's description changed, models stored by 0.3.0 are not reused; a new model is generated.
+- The `threat-model` and `finding-discovery` skills describe themselves as running their stage on its own, so a review request goes to the `defense-factory-review` skill.
 
 ## [0.3.0] - 2026-09-26
 

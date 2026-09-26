@@ -1,0 +1,4 @@
+interface:
+  display_name: "Finding Validation"
+  short_description: "Test unvalidated findings in a disposable container"
+  default_prompt: "Use $finding-validation to validate the findings from this repository's finding-discovery run."

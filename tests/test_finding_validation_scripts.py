@@ -373,6 +373,64 @@ class CleanupSafetyTest(unittest.TestCase):
         self.assertEqual(fv("cleanup_run.py", "--run-id", self.run_id).returncode, 0)
 
 
+class PrerequisiteCheckTest(unittest.TestCase):
+    """check_environment.py reports each unmet prerequisite as: what is not met, and how to fix it."""
+
+    REVIEW = REPO / "skills" / "defense-factory-review" / "scripts" / "check_environment.py"
+
+    def check(self, *args, docker=None, script=None):
+        env = {**os.environ}
+        if docker is not None:
+            env["DEFENSE_FACTORY_DOCKER"] = docker
+        result = subprocess.run([sys.executable, str(script or FV / "check_environment.py"), *args],
+                                capture_output=True, text=True, env=env)
+        return result.returncode, json.loads(result.stdout)
+
+    def assert_actionable(self, entry):
+        for field in ("prerequisite", "problem", "verify"):
+            self.assertTrue(entry[field].strip(), field)
+        self.assertTrue(entry["fix"] and all(step.strip() for step in entry["fix"]))
+
+    def test_docker_missing(self):
+        code, report = self.check(docker="/nonexistent/docker")
+        self.assertEqual(code, 1)
+        self.assertFalse(report["ready"])
+        self.assertEqual(len(report["unmet"]), 1)
+        entry = report["unmet"][0]
+        self.assert_actionable(entry)
+        self.assertIn("installed", entry["prerequisite"])
+        self.assertIn("docker.com", entry["fix"][0])
+
+    def test_docker_not_running(self):
+        code, report = self.check(docker="/usr/bin/false")
+        self.assertEqual(code, 1)
+        entry = report["unmet"][0]
+        self.assert_actionable(entry)
+        self.assertIn("running", entry["prerequisite"])
+        self.assertTrue(any("remote or cloud session" in step for step in entry["fix"]))
+
+    @unittest.skipUnless(HAS_ENGINE, "a container engine is required")
+    def test_memory_below_floor(self):
+        code, report = self.check("--min-memory-gb", "100000")
+        self.assertEqual(code, 1)
+        entry = report["unmet"][0]
+        self.assert_actionable(entry)
+        self.assertIn("memory", entry["prerequisite"].lower())
+        self.assertTrue(any("Resources" in step for step in entry["fix"]))
+
+    @unittest.skipUnless(HAS_ENGINE, "a container engine is required")
+    def test_ready_has_nothing_unmet(self):
+        code, report = self.check()
+        self.assertEqual(code, 0)
+        self.assertTrue(report["ready"])
+        self.assertEqual(report["unmet"], [])
+
+    def test_review_skill_copy_runs(self):
+        code, report = self.check(docker="/nonexistent/docker", script=self.REVIEW)
+        self.assertEqual(code, 1)
+        self.assert_actionable(report["unmet"][0])
+
+
 @unittest.skipUnless(HAS_GIT, "git is required")
 class ExportTargetTest(unittest.TestCase):
     def setUp(self):

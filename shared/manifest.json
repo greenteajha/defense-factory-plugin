@@ -19,6 +19,10 @@
       "finding-discovery",
       "finding-validation"
     ],
+    "scripts/check_environment.py": [
+      "finding-validation",
+      "defense-factory-review"
+    ],
     "scripts/check_findings.py": [
       "finding-discovery",
       "finding-validation"
@@ -27,6 +31,10 @@
       "threat-model",
       "finding-discovery",
       "finding-validation"
+    ],
+    "scripts/engine.py": [
+      "finding-validation",
+      "defense-factory-review"
     ],
     "scripts/normalize_findings.py": [
       "finding-discovery",

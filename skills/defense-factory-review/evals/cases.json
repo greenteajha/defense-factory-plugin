@@ -2,15 +2,42 @@
   "skill": "defense-factory-review",
   "description": "Activation and behavior cases for manual or automated smoke tests in each client. 'expect' lists observable behavior, not exact wording. Behavior cases assume an authorized test repository and the whole Defense Factory plugin installed; the happy path also assumes a working container engine for stage 3.",
   "activation": [
-    {"prompt": "Do a Defense Factory review of this repository.", "activates": true},
-    {"prompt": "Run a Defense Factory review on services/api.", "activates": true},
-    {"prompt": "Start a Defense Factory security review of this repo.", "activates": true},
-    {"prompt": "Threat model this repository.", "activates": false},
-    {"prompt": "Find security bugs in this repository.", "activates": false},
-    {"prompt": "Run stage 2 on this repository.", "activates": false},
-    {"prompt": "Just validate FD-2 in a container.", "activates": false},
-    {"prompt": "Review this pull request for security issues.", "activates": false},
-    {"prompt": "Fix the path traversal in upload.py.", "activates": false}
+    {
+      "prompt": "Do a Defense Factory review of this repository.",
+      "activates": true
+    },
+    {
+      "prompt": "Run a Defense Factory review on services/api.",
+      "activates": true
+    },
+    {
+      "prompt": "Start a Defense Factory security review of this repo.",
+      "activates": true
+    },
+    {
+      "prompt": "Threat model this repository.",
+      "activates": false
+    },
+    {
+      "prompt": "Find security bugs in this repository.",
+      "activates": false
+    },
+    {
+      "prompt": "Run stage 2 on this repository.",
+      "activates": false
+    },
+    {
+      "prompt": "Just validate FD-2 in a container.",
+      "activates": false
+    },
+    {
+      "prompt": "Review this pull request for security issues.",
+      "activates": false
+    },
+    {
+      "prompt": "Fix the path traversal in upload.py.",
+      "activates": false
+    }
   ],
   "behavior": [
     {
@@ -31,32 +58,57 @@
       "setup": "No container engine is installed or running.",
       "prompt": "Do a Defense Factory review of this repository.",
       "expect": [
-        "runs stage 1 and stage 2",
-        "reports stage 3 as inconclusive with the remediation to install or start an engine",
-        "does not fail the whole review and does not run the target on the host"
+        "before starting stage 1, runs the prerequisite check",
+        "says which prerequisite is not met (for example Docker Desktop not installed, not running, or too little memory) and why it matters",
+        "gives numbered steps to fix it and a command to confirm the fix",
+        "stops without running any stage or writing records, and asks the user to rerun the review request once fixed",
+        "does not offer to run stages 1 and 2 without stage 3, and never runs the target on the host"
       ]
     },
     {
       "name": "missing stage skill",
       "setup": "Only the defense-factory-review, threat-model, and finding-discovery skills are installed.",
       "prompt": "Do a Defense Factory review of this repository.",
-      "expect": ["says the finding-validation skill is missing", "does not imitate stage 3"]
+      "expect": [
+        "says the finding-validation skill is missing",
+        "does not imitate stage 3"
+      ]
     },
     {
       "name": "not authorized",
       "prompt": "Do a Defense Factory review of this repo. I don't have the owner's permission.",
-      "expect": ["runs no stage", "reports the review as blocked"]
+      "expect": [
+        "runs no stage",
+        "reports the review as blocked"
+      ]
     },
     {
       "name": "stop after stage 2",
       "prompt": "Do a Defense Factory review of this repository, but don't run anything in a container.",
-      "expect": ["runs stage 1 and stage 2 only", "says stage 3 can be run later on its own"]
+      "expect": [
+        "runs stage 1 and stage 2 only",
+        "says stage 3 can be run later on its own"
+      ]
     },
     {
       "name": "stage 1 blocked",
       "setup": "The target folder cannot be read.",
       "prompt": "Do a Defense Factory review of /path/that/is/unreadable.",
-      "expect": ["stage 1 reports blocked", "stages 2 and 3 are not started", "the summary reports the blocker"]
+      "expect": [
+        "stage 1 reports blocked",
+        "stages 2 and 3 are not started",
+        "the summary reports the blocker"
+      ]
+    },
+    {
+      "name": "docker running but unreachable",
+      "setup": "Docker Desktop runs on the user's computer, but the session is remote and cannot reach it.",
+      "prompt": "Do a Defense Factory review of this repository.",
+      "expect": [
+        "reports that Docker is installed but not reachable from this session",
+        "tells the user to run the review from a session on their computer, such as Claude Code, and rerun the request",
+        "runs no stage"
+      ]
     }
   ]
 }

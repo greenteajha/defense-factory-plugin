@@ -17,6 +17,14 @@ This skill only sequences the stages. Each stage follows its own skill's instruc
 
 ## Workflow
 
+0. **Check prerequisites before stage 1.** Run `scripts/check_environment.py` (with `python3`). It checks what stage 3 needs: Docker Desktop installed, running, reachable from this session, and with enough memory. Stages 1 and 2 need only Python 3.9 or later.
+   - **All met** (exit 0): mention it in one line in step 1 and continue.
+   - **Something is not met** (exit 1): before starting any stage, tell the user, for each entry in the script's `unmet` list:
+     - **What is not met:** the entry's `prerequisite` and `problem`, in plain words.
+     - **How to fix it:** the entry's `fix` steps, numbered, in order, followed by how to confirm the fix (its `verify` command).
+
+     Then **stop**: run no stage and write no records. Ask the user to fix the prerequisites and then send the review request again. Do not offer to run stages 1 and 2 without stage 3, and never run the target on the host as a substitute.
+   - **Python is not available** (the check cannot run): tell the user the prerequisite **Python 3.9 or later** is not met; to fix it, install Python 3.9 or later (from python.org, or with the system's package manager) and confirm with `python3 --version`. Then stop and ask the user to send the review request again once Python is installed.
 1. **Say what will happen, once.** Tell the user the review runs stage 1 (threat model), stage 2 (finding discovery), and stage 3 (isolated validation); that stage 2 reads the in-scope code thoroughly and can take a long time; that **stage 3 builds and runs a disposable container** on their computer to install prerequisites and test the findings, that nothing personal enters it and their working tree is never modified, and that everything the run creates is deleted afterward; and that they can ask to stop after stage 1 or stage 2.
 2. **Stage 1.** Perform the `threat-model` skill on the target and scope, following its instructions completely. Invoke it by name the way the client allows (for example `/defense-factory-plugin:threat-model` in Claude Code, `$threat-model` in Codex, or the skill picker in Cursor), or load its `SKILL.md` and follow it. Note its run folder, run ID, and status.
    - `blocked`: stop the review and report the blocker.
@@ -25,7 +33,7 @@ This skill only sequences the stages. Each stage follows its own skill's instruc
    - `blocked`: stop the review and report the blocker.
    - `complete` or `inconclusive`: continue to stage 3 without asking the user.
 4. **Stage 3.** Perform the `finding-validation` skill on the same target and scope, following its instructions completely. It runs `check_environment.py` first and its `find_findings.py` should select the stage 2 record just produced; confirm the run ID matches, so all three stages share one run folder and stage 3 carries the request forward.
-   - If `check_environment.py` finds no usable container engine, do **not** fail the whole review: report stages 1 and 2, record that stage 3 could not run for lack of an engine (its status is `inconclusive` with the remediation), and tell the user how to enable it and rerun stage 3 on its own.
+   - If Docker became unavailable after step 0 passed, do **not** discard stages 1 and 2: report them, record stage 3 as `inconclusive`, tell the user what is not met and how to fix it (as in step 0), and that they can then rerun stage 3 on its own.
    - `blocked` for any other reason: report it as the stage 3 result.
    - `complete` or `inconclusive`: continue to the report.
 5. **Between and within stages, ask the user only when a stage's own instructions require a decision** (for example a stale model or an unsafe output location). Otherwise keep going.
@@ -40,6 +48,6 @@ This skill only sequences the stages. Each stage follows its own skill's instruc
 ## Failure conditions
 
 - **A stage fails or stops:** report its status and reason exactly as that stage recorded it. Never mark a stage done that did not run, and never write or edit another stage's records by hand.
-- **No container engine for stage 3:** report stages 1 and 2 and record stage 3 as `inconclusive` with the remediation from `check_environment.py`; the findings stay unvalidated. Do not run the target on the host.
+- **A prerequisite is not met:** before any stage starts, say what is not met and exactly how to fix it, as in step 0, then stop and ask the user to rerun the review request once it is fixed. Run nothing in the meantime, and never run the target on the host.
 - **The session runs out during stage 2 or 3:** that stage saves its work as `inconclusive`. Report it, and tell the user they can finish later by asking to run that stage in a new session; the finder scripts will select the same earlier records if the code has not changed.
 - **The user asks to stop after stage 1 or stage 2:** report the stages run so far and say that the remaining stages can be run later on their own.

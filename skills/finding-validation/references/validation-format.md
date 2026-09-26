@@ -10,7 +10,7 @@ The shared stage-record fields are in [record-and-status.md](record-and-status.m
 
 ## The environment block
 
-Fill `environment` once from the run: `host_os`, `host_arch`, `engine`, `engine_version` (from `check_environment.py`), `base_image` and `base_image_digest` (from `image inspect`), `emulation` (`none` or the emulated platform and why), `code_source` (from `export_target.py`), `limits` (memory, cpus, pids, timeout_seconds), `network_setup`, `network_testing`, and `cleanup` (the `cleanup_run.py` result: the label, the counts removed by kind, and how many labelled resources remained — which must be `0`).
+Fill `environment` once from the run: `host_os`, `host_arch`, `engine`, `engine_version` (from `check_environment.py`), `base_image` and `base_image_digest` (see the digest fallback in [container-workbench.md](container-workbench.md#build-the-workbench-with-no-personal-data); when only the local image id is available, record it and say so), `emulation` (`none` or the emulated platform and why), `code_source` (from `export_target.py`), `limits` (memory, cpus, pids, timeout_seconds), `network_setup`, `network_testing`, and `cleanup` (the `cleanup_run.py` result: the label, the counts removed by kind, and how many labelled resources remained — which must be `0`).
 
 ## Each validation entry
 

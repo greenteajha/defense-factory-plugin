@@ -316,6 +316,43 @@ class Stage3PureTest(unittest.TestCase):
         self.assertEqual(check_environment.normalize_arch("x86_64"), "amd64")
         self.assertEqual(check_environment.normalize_arch("aarch64"), "arm64")
 
+    def test_run_container_argv_always_labels_and_limits(self):
+        sys.path.insert(0, str(FV))
+        import run_container  # noqa: E402
+        run_id = "20260926T112259Z"
+        argv = run_container.build_run_argv(run_id, "img:latest", "df-run-abc123",
+                                            network="none", memory="2g", cpus="2", pids=256,
+                                            envs=["A=1"], volumes=["/out:/out"], command=["echo", "hi"])
+        self.assertEqual(argv[0], "run")
+        # both labels present
+        self.assertIn(f"com.defensefactory.run={run_id}", argv)
+        self.assertIn("com.defensefactory=validation", argv)
+        # every limit and the network present
+        for flag in ("--memory", "--cpus", "--pids-limit", "--network"):
+            self.assertIn(flag, argv)
+        self.assertNotIn("--rm", argv)  # default keeps the container labelled for clean-up
+        # image precedes its command
+        self.assertLess(argv.index("img:latest"), argv.index("echo"))
+        self.assertIn("--env", argv)
+        self.assertIn("A=1", argv)
+
+    def test_run_container_build_argv_labels(self):
+        sys.path.insert(0, str(FV))
+        import run_container  # noqa: E402
+        run_id = "20260926T112259Z"
+        argv = run_container.build_build_argv(run_id, "img:latest", "/ctx")
+        self.assertEqual(argv[0], "build")
+        self.assertIn(f"com.defensefactory.run={run_id}", argv)
+        self.assertIn("com.defensefactory=validation", argv)
+        self.assertEqual(argv[-1], "/ctx")
+        self.assertIn("-t", argv)
+
+    def test_run_container_safe_name_is_docker_legal(self):
+        sys.path.insert(0, str(FV))
+        import run_container  # noqa: E402
+        name = run_container.safe_name("20260926T112259Z")
+        self.assertRegex(name, r"^[a-zA-Z0-9][a-zA-Z0-9_.-]+$")
+
 
 @unittest.skipUnless(HAS_ENGINE, "a container engine is required")
 class CleanupSafetyTest(unittest.TestCase):

@@ -2,6 +2,13 @@
 
 All notable changes are recorded here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+- Added `run_container.py` to the `finding-validation` skill. It builds the workbench image and runs each test container with both run labels, memory, CPU, and PID limits, the network setting, and a wall-clock timeout always applied, so none can be forgotten on a hand-written `docker` call. Test containers are kept labelled (no `--rm`) until `cleanup_run.py` removes them, so the clean-up receipt counts what the run actually created.
+- Stage 3 method: browser-origin findings (DNS rebinding, CSRF, private-network access) are validated at the HTTP layer by replaying the requests and headers such a browser would send against the app with stubbed dependencies. The browser's own behaviour is recorded as a stated proof gap; no browser is driven.
+- Stage 3 workbench: a base-image digest fallback for images BuildKit pulled without a local `RepoDigests` entry (`docker buildx imagetools inspect`, then the local image id, recorded as such), and a fixed layout for the run's files (`container-build/`, `workbench/` with `harness/`, `artifacts/<finding_id>/`, `out/`).
+- Stage 2 confidence: an exposure precondition the operator controls (for example a non-default bind address or an optional route) is recorded in `exposure_assumptions` and no longer forces a finding to Low confidence; only a link in the chain that cannot be inspected lowers it.
+
 ## [0.4.0] - 2026-09-26
 
 - Added stage 3 (isolated validation) as the `finding-validation` skill: it takes the stage 2 findings and gives each a verdict of `confirmed`, `rejected`, or `inconclusive`, backed by evidence, by building one disposable container per run on the user's own computer (Docker Desktop, Podman, Colima, or Rancher Desktop; never Apple `container`), installing the target's prerequisites, running the app and a per-finding test, then deleting everything the run created. The exact reviewed revision is copied in, never mounted; no credentials, sockets, or host environment enter the container; the network is on for setup and off by default for testing; and clean-up removes only resources carrying the run's label, so other containers are never touched. Setup failures are never counterevidence; a static fallback is recorded as "assessed statically, not reproduced". Includes `docs/validation-design.md`, `docs/validation-parity.md`, the `validations.json` schema and example, eight helpers (`check_environment.py`, `find_findings.py`, `start_validation.py`, `export_target.py`, `cleanup_run.py`, `normalize_validations.py`, `check_validations.py`, `render_validations.py`) with `engine.py`, `agents/openai.yaml`, and eval cases. Not yet tested live in each client.

@@ -82,8 +82,10 @@ Rate static plausibility, not impact, by the weakest link the finding depends on
 
 - **High:** every link (entry, source, control failure, sink) is shown in this repository's source, with no material counterevidence.
 - **Medium:** a link inside this repository is inferred rather than shown, such as a call-chain step you could not trace fully or a configuration value set in the repository.
-- **Low:** a link depends on something outside the repository you could not inspect and that varies between installations, such as the runtime or language version, a third-party library's version-specific behavior, or a deployment choice.
+- **Low:** a link *in the vulnerability chain itself* depends on something outside the repository you could not inspect and that varies between installations, such as the runtime or language version, or a third-party library's version-specific behavior.
 
 The documented, stable default behavior of a named framework or standard library (for example, how a web framework serves a returned string, or how a standard path function joins paths) counts as shown, not inferred; cite the calling line and name the behavior in `path`.
 
-Missing deployment evidence lowers confidence. It does not make a finding disappear. Record the gap in `proof_gaps`.
+An **exposure precondition is not a weak link.** When every link of the weakness is shown in source but the finding only becomes reachable under a configuration or deployment the operator (not the attacker) chooses — a non-default bind address, an enabled optional route, a specific base URL — rate confidence from the code evidence as usual and record that precondition in `exposure_assumptions`. The choice gates *whether the finding is exposed*, not *whether the code is weak*; do not drop to Low for it, and let stage 3 test the exposed configuration. Only an un-inspectable link in the chain itself lowers confidence.
+
+Missing evidence for a link in the chain lowers confidence; it never makes a finding disappear — record the gap in `proof_gaps`. An exposure precondition the operator controls belongs in `exposure_assumptions` and does not by itself lower confidence.

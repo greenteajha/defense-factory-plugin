@@ -22,6 +22,16 @@ In this order, use the strongest one that is feasible with bounded setup:
 
 Keep commands short, bounded, and non-interactive. Invoke debuggers non-interactively (`gdb -q -batch -ex run -ex bt -ex quit`; `lldb -b -o run -o bt -o quit`). Consult the target's own `README`, `AGENTS.md`, setup and test docs, build files, and package metadata to find the prerequisites and start-up steps.
 
+### Browser-origin findings (rebinding, CSRF, private-network access)
+
+Some findings depend on a browser sending a request to a local service — DNS rebinding against a loopback bind, cross-site requests with no Origin check, or private-network-access reachability. Validate these at the **HTTP layer**, not by automating a browser:
+
+- Drive the running app with the requests such a browser would send — the same method, path, body, and the `Host`, `Origin`, and `Content-Type` headers the attacker page would carry — using the target's own dependencies stubbed on the run's internal network. This is a realistic-interface reproduction of the part the server controls.
+- The verdict is decided by the server's response: whether it accepts the request and serves the result, and whether the suspect sink is reached (the three evidence requirements below still apply). A server that accepts a foreign `Host` or cross-site request and serves the response confirms the server-side weakness.
+- Record the browser's own behaviour — whether a given browser actually permits the rebinding or the cross-origin request under its DNS-pinning and private-network-access rules — as a stated proof gap in `remaining_uncertainty`, not as something to reproduce here. Do not build or drive a browser to force the rebinding step.
+
+A server-side confirmation with that browser proof gap stated can still be `confirmed`; keep the gap explicit so a reader knows the end-to-end browser step was not exercised.
+
 ## The three evidence requirements for a verdict
 
 - **Run a harmless control first.** Establish the safe baseline: the same operation on benign input, or a nearby safe sibling path. A `confirmed` verdict is a change from a known-good control, not an artefact of setup. Record it in `control`.

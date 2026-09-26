@@ -35,7 +35,7 @@ Compiled from codex-security `main` at `6f8b354` on 2026-09-26. Recheck when eit
 - **A dedicated disposable container per run** on the user's own computer — Codex Security has no separate sandbox and validates in whatever environment Codex is already in. This is a deliberate addition, not a parity gap.
 - Runs on **Docker Desktop**, located by path so it is found even when the shell PATH is minimal (a non-interactive or remote shell); never Apple `container`.
 - **No personal data in the workbench**: the exact reviewed revision is copied in (never mounted), and no credentials, SSH agent, engine socket, or host environment variables enter it.
-- **Label-only clean-up** that removes only what the run created and refuses to touch any unlabelled resource, with a test proving the user's MISP stack and other containers are untouched.
+- **Label-only clean-up** that removes only what the run created and refuses to touch any unlabelled resource, with a test proving the user's other containers are untouched.
 - **Two-phase network policy**: network on for setup, off by default for testing.
 - **Portability provenance recorded with every verdict**: host OS, architecture, engine and version, base-image digest, emulation, code source, and limits.
 - **A stage 2 record gate**: the consumed `findings.json` must be valid, normalized, and still match the target version, or the user chooses to rerun stage 2.

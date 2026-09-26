@@ -27,7 +27,7 @@ Run every container with a memory limit, a CPU limit, a PID limit (`--pids-limit
 
 `export_target.py` prints the two labels every build and run must carry: `com.defensefactory.run=<run_id>` and `com.defensefactory=validation`. Pass them to **every** `build` and `run` (and to any `volume create` / `network create`). Nothing the run creates may be unlabelled.
 
-At the end of the run, **and after any failure**, run `scripts/cleanup_run.py --run-id <run_id>`. It removes only resources carrying the run label, lists what it removed, refuses to touch anything unlabelled, and never runs a bare prune. This is what keeps the user's other containers — including their MISP stack — untouched. Record the result in `environment.cleanup`; if anything labelled remains, that is a stage failure — report it and never remove unlabelled resources to compensate.
+At the end of the run, **and after any failure**, run `scripts/cleanup_run.py --run-id <run_id>`. It removes only resources carrying the run label, lists what it removed, refuses to touch anything unlabelled, and never runs a bare prune. This is what keeps the user's other containers untouched. Record the result in `environment.cleanup`; if anything labelled remains, that is a stage failure — report it and never remove unlabelled resources to compensate.
 
 ## What is recorded
 

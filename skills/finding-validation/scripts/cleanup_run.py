@@ -4,7 +4,7 @@
 Stage 3 labels every resource it creates with com.defensefactory.run=<run_id>. This script
 removes resources **only** by that label. It never removes a resource that does not carry the
 label, and it never runs a bare prune, so other containers, images, and volumes on the same
-engine (for example a MISP stack) are never touched. Safe to run after a failed run and safe to
+engine are never touched. Safe to run after a failed run and safe to
 run twice: a run that created nothing removes nothing.
 
 Prints one JSON object: run_id, engine, label, removed ({containers, images, volumes, networks}

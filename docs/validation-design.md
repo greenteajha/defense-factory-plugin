@@ -14,7 +14,7 @@ Decisions taken on 2026-09-26 (from the handoff page):
 | Isolation of the workbench | Copy the exact revision stages 1 and 2 reviewed **into** the container; never mount the user's folders; carry no credentials, SSH agent, Docker socket, or host environment variables | A disposable, personal-data-free workbench that cannot write back to the host tree. |
 | Verdicts | `confirmed`, `rejected`, `inconclusive` | The stage 3 status vocabulary in the shared record; `rejected` becomes available now because the stage tests, not just reads. |
 | Record format | `validations.json` canonical; `validation.md` rendered from it by a script | Same pattern as stage 2's `findings.json` / `findings.md`. Stage 4 reads the JSON. |
-| Clean-up safety | Every resource the run creates carries a run label; clean-up removes **only** by that label, even after failure; it never removes an unlabelled resource | The user's Docker also runs a MISP stack (`~/misp-docker`, five containers, `restart=always`) and other containers that stage 3 must never touch. |
+| Clean-up safety | Every resource the run creates carries a run label; clean-up removes **only** by that label, even after failure; it never removes an unlabelled resource | The user's Docker may run other containers, images, and volumes that stage 3 must never touch. |
 | Git | Never push validation results or finding details to Git (branches, commits, or pull requests) | Same rule as stages 1 and 2; validation detail is sensitive. |
 
 Decisions confirmed by the user on 2026-09-26 (the three questions the handoff left open):
@@ -86,7 +86,7 @@ Setup and testing may share one container or use a built image plus a fresh test
 
 - **Limits.** Every container runs with a memory limit, a CPU limit, a PID limit, and a wall-clock timeout (defaults in the skill, overridable). A long-running setup or test that shows progress is not killed for slowness alone (per Codex's guidance), but the hard timeout bounds a hang.
 - **Run label.** Every resource the run creates — containers, built images, volumes, networks, and (where the engine allows) build cache — carries the label `com.defensefactory.run=<run_id>` (and a second `com.defensefactory=validation` label). `export_target.py` and the run commands set it; nothing is created without it.
-- **Clean-up by label only.** `cleanup_run.py` removes resources **only** by the run label, listing each one it removes, and runs at the end of the stage **and after any failure** (the skill calls it in a `finally`-style step). It refuses to remove any resource that does not carry the run label, and it never runs a bare `system prune`. This is what keeps the MISP stack and every other unlabelled container, image, and volume untouched. The only thing left behind is the evidence in the run folder.
+- **Clean-up by label only.** `cleanup_run.py` removes resources **only** by the run label, listing each one it removes, and runs at the end of the stage **and after any failure** (the skill calls it in a `finally`-style step). It refuses to remove any resource that does not carry the run label, and it never runs a bare `system prune`. This is what keeps every unlabelled container, image, and volume untouched. The only thing left behind is the evidence in the run folder.
 - **Verification of the safety property.** A test builds two labelled and one unlabelled throwaway resource, runs `cleanup_run.py`, and asserts the unlabelled one survives and both labelled ones are gone. This test is part of the release gate.
 
 ## Workflow
@@ -245,10 +245,10 @@ Capability parity with Codex Security's `validation` phase is tracked in [valida
 
 ## Build order (only after approval)
 
-1. The container helpers and their safety test: `check_environment.py`, `export_target.py`, `cleanup_run.py`, with the label-only clean-up test that protects the MISP stack.
+1. The container helpers and their safety test: `check_environment.py`, `export_target.py`, `cleanup_run.py`, with the label-only clean-up test that protects unlabelled resources.
 2. The shared moves: `findings.schema.json`, `find_findings.py`, `check_findings.py`, `normalize_findings.py` into `shared/`; update `manifest.json`, run `sync-shared.py`, extend `check-package.py` expectations, and add the stage 3 record section.
 3. The validations schema and example, `start_validation.py`, `normalize_validations.py`, `check_validations.py`, `render_validations.py`, and tests.
 4. `SKILL.md`, the references, `agents/openai.yaml`, and eval cases.
 5. Update the `defense-factory-review` skill to sequence stage 3 after stage 2 (description, the "say what will happen once" step, the stage 3 call on the shared run, the engine-missing degraded path, and the combined report), plus its eval cases.
-6. `python3 scripts/check-package.py`, `python3 -m unittest discover -s tests`, a dry run on a small deliberately vulnerable demo app (with a clean-up test proving the MISP stack is untouched), then live runs in Claude Code, ChatGPT/Codex, and Cursor.
+6. `python3 scripts/check-package.py`, `python3 -m unittest discover -s tests`, a dry run on a small deliberately vulnerable demo app (with a clean-up test proving unlabelled containers are untouched), then live runs in Claude Code, ChatGPT/Codex, and Cursor.
 7. Release as a minor version only when the user asks.

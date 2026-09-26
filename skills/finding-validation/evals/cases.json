@@ -63,7 +63,7 @@
     },
     {
       "name": "does not touch other containers",
-      "setup": "The user runs other containers (for example a MISP stack) on the same engine.",
+      "setup": "The user runs other containers on the same engine.",
       "prompt": "Validate FD-1 in a container.",
       "expect": [
         "labels every resource it creates with com.defensefactory.run=<run_id>",

@@ -10,6 +10,7 @@ An early, provider-neutral application security plugin inspired by [OpenAI's Def
 - `skills/defense-factory-review` runs the implemented stages in order in one run when you ask for a Defense Factory review: stage 1, then stage 2, then stage 3 without further prompts, then one combined summary.
 - `skills/finding-discovery` starts from a stage 1 threat model, or a narrow scan of named paths, and records deduplicated, **unvalidated** findings with source, control, sink, `file:line` evidence, counterevidence, and an investigation question for stage 3, accounting for every threat-model hypothesis (stage 2). [docs/finding-discovery-design.md](docs/finding-discovery-design.md) describes it; [docs/finding-discovery-parity.md](docs/finding-discovery-parity.md) maps it against Codex Security.
 - `skills/finding-validation` takes the stage 2 findings and gives each a verdict of `confirmed`, `rejected`, or `inconclusive`, backed by evidence, by building one disposable container per run on your own computer, installing the target's prerequisites, running the app and a per-finding test, then deleting everything the run created; clean-up removes only what the run labelled, so your other containers are untouched (stage 3). Its helpers need Python 3.9 or later and Docker Desktop. [docs/validation-design.md](docs/validation-design.md) describes it; [docs/validation-parity.md](docs/validation-parity.md) maps it against Codex Security.
+- `skills/attack-path-analysis` (stage 3b, unreleased) gives each validated finding a severity (`critical` to `low`, or `ignore`) and a priority (P0 to P3) from an evidence-based attack path: facts, then impact and likelihood, then a fixed severity policy that its check script recomputes. It calibrates against stage 1's target-specific severity table. [docs/attack-path-design.md](docs/attack-path-design.md) describes it; [docs/attack-path-parity.md](docs/attack-path-parity.md) maps it against Codex Security.
 - Stages 4 to 6 are specified in `docs/workflow-contracts.md` and are **not yet implemented**.
 
 ## Layout
@@ -19,13 +20,16 @@ plugin.json                         portable identity and metadata
 skills/threat-model/                stage 1 skill: SKILL.md, references, template, helper scripts, evals
 skills/finding-discovery/           stage 2 skill: SKILL.md, references, schema, example, helper scripts, evals
 skills/finding-validation/          stage 3 skill: SKILL.md, references, schema, example, helper scripts, evals
-skills/defense-factory-review/      runs stages 1, 2, and 3 in order: SKILL.md, evals
+skills/attack-path-analysis/       stage 3b skill: SKILL.md, references, schema, example, helper scripts, evals
+skills/defense-factory-review/      runs stages 1, 2, 3, and 3b in order: SKILL.md, evals
 docs/workflow-contracts.md          stage handoff and evidence contracts
 docs/threat-model-parity.md         capability map against Codex Security's threat-model skill
 docs/finding-discovery-design.md    stage 2 design
 docs/finding-discovery-parity.md    capability map against Codex Security's discovery phase
 docs/validation-design.md           stage 3 design
 docs/validation-parity.md           capability map against Codex Security's validation phase
+docs/attack-path-design.md          stage 3b design
+docs/attack-path-parity.md          capability map against Codex Security's attack-path phase
 .claude-plugin/plugin.json          Claude Code metadata adapter
 .claude-plugin/marketplace.json     Claude Code marketplace catalog
 .agents/plugins/marketplace.json    local ChatGPT/Codex catalog

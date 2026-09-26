@@ -1,6 +1,6 @@
 # Provider-neutral workflow contracts
 
-These contracts describe the intended six-stage defensive workflow. They are the design basis for the plugin's skills; version 0.4.0 implements stage 1 as the `threat-model` skill and stage 2 as the `finding-discovery` skill, and runs them in order with the `defense-factory-review` skill; stages 3 to 6 are not implemented yet. The orchestrating client may run one requested stage or the full sequence when each stage is implemented; the `defense-factory-review` skill runs the implemented stages in order when the user asks for a Defense Factory review. It must preserve status and evidence at handoffs.
+These contracts describe the intended six-stage defensive workflow. They are the design basis for the plugin's skills; version 0.4.0 implements stage 1 as the `threat-model` skill, stage 2 as the `finding-discovery` skill, and stage 3 as the `finding-validation` skill, and runs them in order with the `defense-factory-review` skill; the unreleased `attack-path-analysis` skill adds sub-stage 3b (severity and priority for validated findings); stages 4 to 6 are not implemented yet. The orchestrating client may run one requested stage or the full sequence when each stage is implemented; the `defense-factory-review` skill runs the implemented stages in order when the user asks for a Defense Factory review. It must preserve status and evidence at handoffs.
 
 ## Shared record
 
@@ -25,7 +25,7 @@ Every stage records: repository and revision; authorized scope; stage and status
 ## 3. Isolated validation
 
 - **Entry and inputs:** Unvalidated finding, expected behavior, and an authorized, reproducible test environment.
-- **Output and evidence:** `confirmed`, `rejected`, or `inconclusive`; setup details, test steps, observed result, and counterevidence.
+- **Output and evidence:** `confirmed`, `rejected`, or `inconclusive`; setup details, test steps, observed result, and counterevidence. Sub-stage 3b (attack-path analysis) then gives each `confirmed` or `inconclusive` finding a severity (`critical` to `low`, or `ignore`) and a priority (P0 to P3) from an evidence-based attack path; only `confirmed` findings get a final severity, and `inconclusive` ones stay `deferred` with a provisional one.
 - **Completion:** A confirmed finding has repeatable evidence. Failure to provision or execute a test is inconclusive, not rejection.
 - **Blocked or inconclusive:** Unsafe environment, absent dependencies, or non-reproducible result.
 - **Gate and retention:** Use an isolated environment and approved test scope. Remove temporary state after evidence is captured under policy.

@@ -37,6 +37,10 @@
     {
       "prompt": "Fix the path traversal in upload.py.",
       "activates": false
+    },
+    {
+      "prompt": "How severe is FD-3?",
+      "activates": false
     }
   ],
   "behavior": [
@@ -45,12 +49,12 @@
       "setup": "A container engine is running.",
       "prompt": "Do a Defense Factory review of this repository.",
       "expect": [
-        "says once that it will run stage 1, stage 2, and stage 3, that stage 2 can take long, and that stage 3 builds and runs a disposable container",
+        "says once that it will run stage 1, stage 2, stage 3, and stage 3b, that stage 2 can take long, and that stage 3 builds and runs a disposable container",
         "asks no authorization or output-location question",
-        "runs the threat-model, then finding-discovery, then finding-validation skills without asking in between",
-        "all three stages write into the same .defense-factory/runs/<run_id>/ folder",
+        "runs the threat-model, finding-discovery, finding-validation, then attack-path-analysis skills without asking in between",
+        "all four stages write into the same .defense-factory/runs/<run_id>/ folder",
         "each stage carries the authorization forward from the previous run",
-        "ends with one summary covering all three stages, verdicts by type, the overall status, and that stage 4 is not available yet"
+        "ends with one summary covering all four stages, verdicts by type, severities and priorities, the overall status, and that stage 4 is not available yet"
       ]
     },
     {
@@ -67,11 +71,11 @@
     },
     {
       "name": "missing stage skill",
-      "setup": "Only the defense-factory-review, threat-model, and finding-discovery skills are installed.",
+      "setup": "Only the defense-factory-review, threat-model, finding-discovery, and finding-validation skills are installed.",
       "prompt": "Do a Defense Factory review of this repository.",
       "expect": [
-        "says the finding-validation skill is missing",
-        "does not imitate stage 3"
+        "says the attack-path-analysis skill is missing",
+        "does not imitate stage 3b"
       ]
     },
     {

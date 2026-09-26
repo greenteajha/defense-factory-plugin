@@ -42,7 +42,7 @@ Take the unvalidated findings from a stage 2 `finding-discovery` run and decide,
 
 ## Completion
 
-The stage is `complete` when the environment was available, every selected finding has a verdict with the evidence its verdict requires, both checks pass, and `cleanup_run.py` reports nothing labelled remaining. Report the path of `validation.md`, the status, verdicts by type, the engine and architecture used, and that all run resources were cleaned up. Suggest human triage of the confirmed findings (stage 4 is not implemented yet).
+The stage is `complete` when the environment was available, every selected finding has a verdict with the evidence its verdict requires, both checks pass, and `cleanup_run.py` reports nothing labelled remaining. Report the path of `validation.md`, the status, verdicts by type, the engine and architecture used, and that all run resources were cleaned up. Suggest stage 3b (attack-path analysis) next, to rate the severity and priority of the confirmed and inconclusive findings.
 
 ## Failure conditions
 

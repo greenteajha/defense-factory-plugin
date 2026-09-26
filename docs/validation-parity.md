@@ -46,7 +46,7 @@ Compiled from codex-security `main` at `6f8b354` on 2026-09-26. Recheck when eit
 
 | Codex Security mechanism | Reason |
 | --- | --- |
-| Severity and attack-path scoring during/after validation (`artifact-attack-path.ts`, `severity-policy.md`, `candidate-attack-paths.schema.json`) | Severity belongs to a later stage in this workflow; stage 3 only decides whether the finding holds. |
+| Severity and attack-path scoring during/after validation (`artifact-attack-path.ts`, `severity-policy.md`, `candidate-attack-paths.schema.json`) | Provided by the separate `attack-path-analysis` skill (stage 3b), run after stage 3; see [attack-path-parity.md](attack-path-parity.md). Stage 3 itself only decides whether the finding holds. |
 | Workbench MCP tools (`record_codex_security_candidate_validations`, `list_codex_security_candidates`, drafts, checkpoints) | Replaced by files in the run folder, so the skill works with no MCP server across all three clients. |
 | Compact workbench-backed diff-mode validation (one atomic call for every candidate) | Diff and PR scans are deferred plugin-wide (a stage 2 parity gap too); stage 3 validates whole-record findings. |
 | Deep-scan reducer and parent-sandbox worker pool (`deep-scan/*`) | Out of scope; this stage runs one disposable container on the user's machine. |

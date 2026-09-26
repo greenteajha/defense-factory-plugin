@@ -1,0 +1,4 @@
+interface:
+  display_name: "Attack-Path Analysis"
+  short_description: "Rate the severity and priority of validated findings"
+  default_prompt: "Use $attack-path-analysis to rate the severity and priority of this repository's validated findings."

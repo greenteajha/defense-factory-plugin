@@ -70,6 +70,19 @@ Stage 3 keeps the record as the `record` object in `validations.json`; `render_v
 
 Within one run, stage 3 carries the stage 2 request forward: `authorization` reads `inherited from stage 2 run <run_id>: ` followed by the stage 2 record's `authorization` value. Stage 3 uses no confirmation prompt, even though it runs the target's code; the disposable container and the never-mounted host tree are its safeguards.
 
+## Stage 3b (attack-path analysis) fields
+
+Stage 3b keeps the record as the `record` object in `attack-paths.json`; `render_attack_paths.py` writes it into `attack-paths.md`. The per-finding fields (facts, attacker steps, impact, likelihood, severity, decision, priority) live in each `analyses` entry. The first field below is written by `start_attack_paths.py`; the rest are derived from the body.
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `source` | yes | Always `validated-record`: stage 3b starts from a stage 3 `validations.json`. |
+| `validated_record_ref` | derived | Path and sha256 of the stage 3 record used. |
+| `severities` | derived | Number of analyses by severity (`critical`, `high`, `medium`, `low`, `ignore`, `unknown`). |
+| `decisions` | derived | Number of analyses by decision (`reportable`, `deferred`, `ignore`). |
+
+Within one run, stage 3b carries the stage 3 request forward: `authorization` reads `inherited from stage 3 run <run_id>: ` followed by the stage 3 record's `authorization` value. Stage 3b only reads code and records; it runs nothing.
+
 ## Status values
 
 - **`complete`**: the stage's completion criteria are met. The result may still contain hypotheses, unvalidated findings, and open questions; completion means the output is fit for review, not that the target is secure.

@@ -1,0 +1,241 @@
+{
+  "record": {
+    "record_version": 1,
+    "stage": "3b-attack-path-analysis",
+    "status": "complete",
+    "run_id": "20260926T090000Z",
+    "timestamp": "2026-09-26T10:00:00Z",
+    "actor": "Example agent (Claude Code); requested by the user",
+    "model": "Example Model 1.0",
+    "skill_version": "attack-path-analysis/sha256:0123456789abcdef",
+    "target_id": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "target_kind": "git_revision",
+    "version": "0123456789abcdef0123456789abcdef01234567",
+    "revision": "0123456789abcdef0123456789abcdef01234567",
+    "scope": "whole-repository",
+    "authorization": "inherited from stage 3 run 20260926T090000Z: inherited from stage 2 run 20260926T090000Z: requested by the user in session on 2026-09-26: \"Do a Defense Factory review of this repository\"",
+    "output_location": "default .defense-factory (Git-ignored)",
+    "source": "validated-record",
+    "inputs": [],
+    "tools": "Python 3.12; prepare_workspace.py, find_validations.py, start_attack_paths.py, normalize/check/render_attack_paths.py",
+    "evidence": "attack-paths.md; the stage 1-3 records referenced in attack-paths.json",
+    "assumptions": [],
+    "coverage_gaps": [],
+    "next_action": "Stage 4 (patch preparation) for FD-1 first; FD-4 needs an admin-session test before it can be rated."
+  },
+  "validated_record": {
+    "path": "../3-finding-validation/validations.json",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "run_id": "20260926T090000Z"
+  },
+  "threat_model": {
+    "path": "../1-threat-model/threat-model.md",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "run_id": "20260926T090000Z"
+  },
+  "security_guidance": {
+    "path": "../2-finding-discovery/security-guidance.md",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "analyses": [
+    {
+      "validation_id": "VD-3",
+      "finding_id": "FD-3",
+      "finding_key": "error-page-stack-trace",
+      "finding_fingerprint": "fp:3333333333333333",
+      "title": "Error page shows a stack trace to the requesting user",
+      "verdict": "confirmed",
+      "locations": [
+        {
+          "path": "src/api/routes.py",
+          "start_line": 30,
+          "end_line": 34,
+          "role": "sink"
+        }
+      ],
+      "facts": {
+        "in_scope": "yes",
+        "security_vulnerability": "yes",
+        "product_surface": "yes",
+        "vector": "remote",
+        "auth_scope": "public",
+        "cross_boundary": "no",
+        "preconditions": "plausible",
+        "attacker_input_control": "yes",
+        "exposure": "The upload route is served on the app's listener (`HOST` default).",
+        "identity": "Any user who can reach the upload form.",
+        "impact_surface": "The requesting user's own error page.",
+        "target_reach": "One service.",
+        "controls": "Errors are rendered only to the session that caused them.",
+        "secrets": "none",
+        "blind_spots": "The deployment's network policy is not in the repository."
+      },
+      "attacker_steps": [
+        "Send a malformed request.",
+        "Receive a stack trace in the response to that same request."
+      ],
+      "dataflow": "Exception -> error handler -> response body of the same request.",
+      "reachability": "Any user -> any route -> malformed input -> their own error page.",
+      "counterevidence": [
+        {
+          "fact": "cross_boundary",
+          "evidence": "The handler writes the trace only to the response of the request that raised it; no log or page is shared with other users.",
+          "dispositive": true
+        }
+      ],
+      "impact": "low",
+      "likelihood": "high",
+      "critical_criteria_met": false,
+      "suppression": "self-only-impact",
+      "severity": "ignore",
+      "severity_rationale": "Only the requester sees the trace; stage 1's calibration table lists self-only information disclosure as a counterexample for Low.",
+      "change_conditions": "Raise it if traces reach logs or pages other users can read, or include secrets.",
+      "decision": "ignore",
+      "confidence": {
+        "level": "High",
+        "reason": "Reproduced in stage 3; the handler's output path is fully visible."
+      }
+    },
+    {
+      "validation_id": "VD-4",
+      "finding_id": "FD-4",
+      "finding_key": "admin-routes-no-role-check",
+      "finding_fingerprint": "fp:4444444444444444",
+      "title": "Admin routes without a role check",
+      "verdict": "inconclusive",
+      "locations": [
+        {
+          "path": "src/api/auth.py",
+          "start_line": 3,
+          "end_line": 3,
+          "role": "root_control"
+        }
+      ],
+      "facts": {
+        "in_scope": "yes",
+        "security_vulnerability": "yes",
+        "product_surface": "yes",
+        "vector": "remote",
+        "auth_scope": "unknown",
+        "cross_boundary": "yes",
+        "preconditions": "unknown",
+        "attacker_input_control": "yes",
+        "exposure": "Registered on the main router; whether a global hook guards it is not settled.",
+        "identity": "Any user who can reach the upload form.",
+        "impact_surface": "Admin actions and their data.",
+        "target_reach": "One service.",
+        "controls": "None on the member path before the write.",
+        "secrets": "none",
+        "blind_spots": "The deployment's network policy is not in the repository."
+      },
+      "attacker_steps": [
+        "Authenticate as a normal user.",
+        "Call an admin route directly.",
+        "Perform the admin action if no role check runs."
+      ],
+      "dataflow": "Request -> admin blueprint -> protected action.",
+      "reachability": "Normal user -> admin route -> no role decorator seen -> admin action (not reproduced).",
+      "counterevidence": [
+        {
+          "fact": "auth_scope",
+          "evidence": "No global before-request role hook was found, but the app's bootstrap could not be exercised.",
+          "dispositive": false
+        }
+      ],
+      "impact": "high",
+      "likelihood": "unknown",
+      "critical_criteria_met": false,
+      "suppression": null,
+      "severity": "medium",
+      "severity_rationale": "High impact if it holds; likelihood is unknown until a seeded admin session is tested, so the matrix gives a provisional medium.",
+      "change_conditions": "Raise to high if a normal session reaches the admin action; ignore if a global role check is found.",
+      "proof_gap": "Stage 3 could not seed an admin session, so the missing role check was not exercised at runtime.",
+      "decision": "deferred",
+      "confidence": {
+        "level": "Low",
+        "reason": "Static only; the runtime auth wiring was not exercised."
+      }
+    },
+    {
+      "validation_id": "VD-1",
+      "finding_id": "FD-1",
+      "finding_key": "archive-member-path-zip",
+      "finding_fingerprint": "fp:1111111111111111",
+      "title": "Archive import escapes the import folder (path traversal)",
+      "verdict": "confirmed",
+      "locations": [
+        {
+          "path": "src/api/upload.py",
+          "start_line": 20,
+          "end_line": 20,
+          "role": "entrypoint"
+        },
+        {
+          "path": "src/api/upload.py",
+          "start_line": 24,
+          "end_line": 26,
+          "role": "root_control"
+        }
+      ],
+      "facts": {
+        "in_scope": "yes",
+        "security_vulnerability": "yes",
+        "product_surface": "yes",
+        "vector": "remote",
+        "auth_scope": "public",
+        "cross_boundary": "yes",
+        "preconditions": "plausible",
+        "attacker_input_control": "yes",
+        "exposure": "The upload route is served on all interfaces by default (the app binds 0.0.0.0 unless HOST is set), so anyone who can reach the host's port can use it.",
+        "identity": "Any user who can reach the upload form.",
+        "impact_surface": "Files on the server's filesystem.",
+        "target_reach": "One service.",
+        "controls": "None on the member path before the write.",
+        "secrets": "none",
+        "blind_spots": "The deployment's network policy is not in the repository."
+      },
+      "attacker_steps": [
+        "Build a zip whose member name climbs out of the import folder.",
+        "Upload it through the import form.",
+        "The server writes the member outside the import folder."
+      ],
+      "dataflow": "Uploaded archive -> member name -> path join -> file write outside the import folder.",
+      "reachability": "Any user who can reach the form -> upload route -> no containment check -> arbitrary file write (reproduced twice in stage 3).",
+      "counterevidence": [
+        {
+          "fact": "exposure",
+          "evidence": "Checked for a reverse proxy, allowlist, or authentication in front of the upload route; none is configured in the repository.",
+          "dispositive": false
+        },
+        {
+          "fact": "controls",
+          "evidence": "No normalization or containment check runs before the write.",
+          "dispositive": false
+        }
+      ],
+      "impact": "high",
+      "likelihood": "high",
+      "critical_criteria_met": false,
+      "suppression": null,
+      "severity": "high",
+      "severity_rationale": "Arbitrary file write on the server, reproduced; stage 1 lists file writes outside the data folder as High. Not critical: no code execution was shown.",
+      "change_conditions": "Raise to critical if a written file is later executed or loaded as configuration; lower if uploads are restricted to trusted operators.",
+      "decision": "reportable",
+      "confidence": {
+        "level": "High",
+        "reason": "Reproduced twice through the real upload interface with a passing control."
+      }
+    }
+  ],
+  "not_eligible": [
+    {
+      "validation_id": "VD-2",
+      "finding_id": "FD-2",
+      "verdict": "rejected",
+      "reason": "rejected in stage 3: the control held, so there is no attack path to rate"
+    }
+  ],
+  "open_questions": [
+    "Does any deployment set HOST beyond 127.0.0.1 for shared use?"
+  ]
+}

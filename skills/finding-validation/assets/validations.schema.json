@@ -77,7 +77,7 @@
       "properties": {
         "host_os": { "$ref": "#/$defs/text" },
         "host_arch": { "$ref": "#/$defs/text" },
-        "engine": { "enum": ["docker", "podman", "nerdctl"] },
+        "engine": { "const": "docker" },
         "engine_version": { "$ref": "#/$defs/text" },
         "base_image": { "$ref": "#/$defs/text" },
         "base_image_digest": { "$ref": "#/$defs/text" },

@@ -1,23 +1,22 @@
 #!/usr/bin/env python3
-"""Check that a disposable container engine is available before stage 3 runs anything.
+"""Check that Docker is available before stage 3 runs anything.
 
-Detects one usable engine (docker, podman, or nerdctl; never Apple `container`), checks its
-daemon answers, and reports the architecture and the memory the engine can use. Nothing in stage 3
-ever runs the target on the host: if no engine is usable, or memory is below the floor, this stops
-the stage and says exactly what to install or start.
+Stage 3 uses Docker Desktop only. Docker is located from the PATH or a standard install location
+(so a running Docker Desktop is found even when the shell PATH is minimal), and its daemon must
+answer. Nothing in stage 3 ever runs the target on the host: if Docker is not usable, or its
+memory is below the floor, this stops the stage and says what to install or start.
 
 Prints one JSON object: ready, engine, engine_path, engine_version, daemon_running, host_os,
 host_arch, engine_arch, mem_bytes, mem_floor_bytes, meets_floor, emulation_available, problems,
-remediation, engines_seen.
+remediation.
 
-Exit codes: 0 ready; 1 not ready (no engine, daemon down, or below the memory floor); 2 bad
+Exit codes: 0 ready; 1 not ready (Docker missing, daemon down, or below the memory floor); 2 bad
 arguments. Standard library only; Python 3.9+. Read-only: starts and changes nothing.
 """
 
 import argparse
 import json
 import platform
-import shutil
 import sys
 from pathlib import Path
 
@@ -32,9 +31,9 @@ def normalize_arch(value):
     return ARCH_ALIASES.get(str(value or "").strip().lower(), str(value or "").strip().lower() or None)
 
 
-def info_json(name):
-    """`<engine> info` as a dict, or None. docker/nerdctl put memory at MemTotal; podman nests it."""
-    result = engine_mod.run(name, "info", "--format", "{{json .}}", timeout=60)
+def info_json(docker):
+    """`docker info` as a dict, or None."""
+    result = engine_mod.run(docker, "info", "--format", "{{json .}}", timeout=60)
     if result.returncode != 0 or not result.stdout.strip():
         return None
     try:
@@ -45,21 +44,20 @@ def info_json(name):
 
 
 def read_mem_and_arch(info):
-    """(mem_bytes, engine_arch) from an info dict, tolerating docker/nerdctl and podman shapes."""
+    """(mem_bytes, engine_arch) from a docker info dict."""
     if not info:
         return None, None
-    host = info.get("host") if isinstance(info.get("host"), dict) else {}
-    mem = info.get("MemTotal", host.get("memTotal"))
-    arch = info.get("Architecture") or host.get("arch")
+    mem = info.get("MemTotal")
+    arch = info.get("Architecture")
     mem = mem if isinstance(mem, int) and mem > 0 else None
     return mem, normalize_arch(arch)
 
 
-def engine_version(name):
-    result = engine_mod.run(name, "version", "--format", "{{.Server.Version}}", timeout=60)
+def engine_version(docker):
+    result = engine_mod.run(docker, "version", "--format", "{{.Server.Version}}", timeout=60)
     version = result.stdout.strip() if result.returncode == 0 else ""
     if not version:
-        result = engine_mod.run(name, "--version", timeout=30)
+        result = engine_mod.run(docker, "--version", timeout=30)
         version = result.stdout.strip() if result.returncode == 0 else ""
     return version or "unknown"
 
@@ -67,7 +65,7 @@ def engine_version(name):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--min-memory-gb", type=float, default=DEFAULT_FLOOR_GB,
-                        help=f"memory floor the engine must offer (default: {DEFAULT_FLOOR_GB})")
+                        help=f"memory floor Docker must offer (default: {DEFAULT_FLOOR_GB})")
     args = parser.parse_args()
     if args.min_memory_gb < 0:
         parser.exit(2, "error: --min-memory-gb must not be negative\n")
@@ -75,48 +73,45 @@ def main():
 
     host_os = platform.system().lower()
     host_arch = normalize_arch(platform.machine())
-    seen = engine_mod.available_engines()
     report = {
-        "ready": False, "engine": None, "engine_path": None, "engine_version": None,
+        "ready": False, "engine": "docker", "engine_path": None, "engine_version": None,
         "daemon_running": False, "host_os": host_os, "host_arch": host_arch, "engine_arch": None,
         "mem_bytes": None, "mem_floor_bytes": floor, "meets_floor": None,
-        "emulation_available": None, "problems": [], "remediation": [], "engines_seen": seen,
+        "emulation_available": None, "problems": [], "remediation": [],
     }
 
-    if not seen:
-        report["problems"].append("no container engine found on PATH")
+    docker = engine_mod.docker_bin()
+    if docker is None:
+        report["problems"].append("Docker was not found on PATH or in a standard install location")
         report["remediation"].append(
-            "install and start one of Docker Desktop, Podman, Colima, or Rancher Desktop, then retry; "
-            "stage 3 never runs the target on the host")
+            "install and start Docker Desktop (https://www.docker.com/products/docker-desktop/), then retry; "
+            "if Docker is installed, set DEFENSE_FACTORY_DOCKER to its full path. Stage 3 never runs the target on the host")
+        print(json.dumps(report, indent=2))
+        return 1
+    report["engine_path"] = docker
+
+    if not engine_mod.daemon_ok(docker):
+        report["engine_version"] = engine_version(docker)
+        report["problems"].append("Docker is installed but its daemon is not responding")
+        report["remediation"].append("start Docker Desktop (open the app and wait until it reports running), then retry")
         print(json.dumps(report, indent=2))
         return 1
 
-    # Prefer the first engine whose daemon answers; fall back to the first seen for the report.
-    chosen = next((name for name in seen if engine_mod.daemon_ok(name)), None)
-    if chosen is None:
-        name = seen[0]
-        report.update(engine=name, engine_path=shutil.which(name), engine_version=engine_version(name))
-        report["problems"].append(f"the {name} engine is installed but its daemon is not responding")
-        report["remediation"].append(f"start the {name} engine (open its app or run its service), then retry")
-        print(json.dumps(report, indent=2))
-        return 1
-
-    info = info_json(chosen)
+    info = info_json(docker)
     mem_bytes, engine_arch = read_mem_and_arch(info)
-    report.update(engine=chosen, engine_path=shutil.which(chosen), engine_version=engine_version(chosen),
-                  daemon_running=True, engine_arch=engine_arch or host_arch, mem_bytes=mem_bytes)
+    report.update(engine_version=engine_version(docker), daemon_running=True,
+                  engine_arch=engine_arch or host_arch, mem_bytes=mem_bytes)
     report["emulation_available"] = (engine_arch or host_arch) != host_arch or None
 
     if mem_bytes is None:
         report["meets_floor"] = None
-        report["problems"].append(
-            f"could not read the memory available to {chosen}; proceeding, but keep the run small")
+        report["problems"].append("could not read the memory available to Docker; proceeding, but keep the run small")
     elif mem_bytes < floor:
         report["meets_floor"] = False
         report["problems"].append(
-            f"{chosen} offers {mem_bytes // (1 << 20)} MiB, below the {floor // (1 << 20)} MiB floor")
+            f"Docker offers {mem_bytes // (1 << 20)} MiB, below the {floor // (1 << 20)} MiB floor")
         report["remediation"].append(
-            f"raise the engine's memory limit to at least {args.min_memory_gb} GB in its settings, then retry")
+            f"raise Docker Desktop's memory limit to at least {args.min_memory_gb} GB in Settings > Resources, then retry")
         print(json.dumps(report, indent=2))
         return 1
     else:

@@ -30,9 +30,8 @@ HAS_GIT = shutil.which("git") is not None
 
 sys.path.insert(0, str(FV))
 import engine as engine_mod  # noqa: E402
-HAS_ENGINE = bool(engine_mod.available_engines()) and any(
-    engine_mod.daemon_ok(name) for name in engine_mod.available_engines())
-ENGINE = next((name for name in engine_mod.available_engines() if engine_mod.daemon_ok(name)), None) if HAS_ENGINE else None
+ENGINE = engine_mod.docker_bin()
+HAS_ENGINE = bool(ENGINE) and engine_mod.daemon_ok(ENGINE)
 
 
 def fv(script, *args):

@@ -69,26 +69,27 @@ def remove(engine, kind, identifiers, problems):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--run-id", required=True, help="the run whose labelled resources to remove")
-    parser.add_argument("--engine", help="force docker, podman, or nerdctl (default: the one in use)")
+    parser.add_argument("--docker", help="path to the docker executable (default: auto-detect)")
     args = parser.parse_args()
     if not RUN_ID.fullmatch(args.run_id):
         parser.exit(2, "error: --run-id may contain only letters, digits, '.', '_' and '-'\n")
 
-    engines = [args.engine] if args.engine else engine_mod.available_engines()
-    engine = next((name for name in engines if engine_mod.daemon_ok(name)), None)
+    docker = args.docker or engine_mod.docker_bin()
+    if docker and not engine_mod.daemon_ok(docker):
+        docker = None
     label = engine_mod.run_label(args.run_id)
-    report = {"run_id": args.run_id, "engine": engine, "label": label,
+    report = {"run_id": args.run_id, "engine": "docker" if docker else None, "label": label,
               "removed": {}, "remaining": {}, "problems": []}
-    if engine is None:
-        report["problems"].append("no container engine with a running daemon is available")
+    if docker is None:
+        report["problems"].append("Docker with a running daemon is not available")
         print(json.dumps(report, indent=2))
         return 1
 
     # Containers first (they hold images and volumes), then images, volumes, networks.
     for kind in ("containers", "images", "volumes", "networks"):
-        report["removed"][kind] = remove(engine, kind, ids(engine, kind, label), report["problems"])
+        report["removed"][kind] = remove(docker, kind, ids(docker, kind, label), report["problems"])
     for kind in ("containers", "images", "volumes", "networks"):
-        left = ids(engine, kind, label)
+        left = ids(docker, kind, label)
         if left:
             report["remaining"][kind] = left
             report["problems"].append(f"{len(left)} {kind} still carry {label} after clean-up")

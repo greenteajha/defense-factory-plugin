@@ -8,8 +8,8 @@ Decisions taken on 2026-09-26 (from the handoff page):
 
 | Decision | Choice | Reason |
 | --- | --- | --- |
-| Where the test runs | One disposable Docker-compatible container per run, on the user's computer | The user rejected remote servers, Kubernetes, and cloud sandboxes, and accepted a relaxed isolation standard: a clean, disposable workbench, not kernel-level isolation. |
-| Engine | Any of Docker Desktop, Podman, Colima, or Rancher Desktop | Portable across the engines the user is likely to have. Do **not** depend on Apple `container`. |
+| Where the test runs | One disposable Docker container per run, on the user's computer | The user rejected remote servers, Kubernetes, and cloud sandboxes, and accepted a relaxed isolation standard: a clean, disposable workbench, not kernel-level isolation. |
+| Engine | Docker Desktop only, located by path when not on the shell PATH | The user chose Docker-only on 2026-09-26 (earlier the design allowed any Docker-compatible engine); a non-interactive/remote shell can hide Docker from PATH, so it is also probed at standard install locations. Never Apple `container`. |
 | What runs in the container | Install prerequisites (setup), run the application, run one test per finding, then dispose of everything the run created | The four steps named in the handoff goal. |
 | Isolation of the workbench | Copy the exact revision stages 1 and 2 reviewed **into** the container; never mount the user's folders; carry no credentials, SSH agent, Docker socket, or host environment variables | A disposable, personal-data-free workbench that cannot write back to the host tree. |
 | Verdicts | `confirmed`, `rejected`, `inconclusive` | The stage 3 status vocabulary in the shared record; `rejected` becomes available now because the stage tests, not just reads. |
@@ -62,7 +62,7 @@ Known limit, as in stage 2: the record lives in a Git-ignored folder anyone with
 
 ### Engine abstraction
 
-`check_environment.py` detects one usable engine CLI from `docker`, `podman`, or `nerdctl` (Docker Desktop and Colima present `docker`; Podman presents `podman`; Rancher Desktop presents `nerdctl` or `docker`). It verifies the engine is installed and its daemon is reachable, reports the architecture (`arm64` or `amd64`), the engine name and version, and the memory available to the engine, and checks that memory meets a floor (default 4 GB, configurable). It never depends on Apple `container`. If no engine is usable, or memory is below the floor, the stage stops **before running anything** and tells the user exactly what to install or start; it never falls back to running the target on the host.
+`check_environment.py` detects Docker (Docker Desktop), located from the PATH or a standard install location (so a running Docker Desktop is found even when the shell PATH is minimal, e.g. a non-interactive or remote shell; `DEFENSE_FACTORY_DOCKER` forces a path). It never uses Apple `container`. It verifies the daemon answers, reports the architecture, and checks memory against a floor.
 
 All commands the skill uses are the intersection the three CLIs share: `build`, `run` with `--label`, `--memory`, `--cpus`, `--network`, `--pids-limit`, `image inspect --format '{{.Id}}'` for digests, and label-filtered `ps`/`images`/`volume ls`/`network ls` plus `rm` for clean-up. Where a flag differs, the helper owns the difference so `SKILL.md` stays in capability terms.
 
@@ -129,7 +129,7 @@ Specified by the skill's `assets/validations.schema.json`; `assets/validations-e
 | Field | Meaning |
 | --- | --- |
 | `host_os`, `host_arch` | The user's OS and chip (`darwin`, `arm64`). |
-| `engine`, `engine_version` | `docker` / `podman` / `nerdctl` and its version. |
+| `engine`, `engine_version` | `docker` and its version. |
 | `base_image`, `base_image_digest` | The workbench image and its resolved digest. |
 | `emulation` | `none`, or the emulated platform used and why. |
 | `code_source` | `git-archive:<revision>` or `copied-files`. |

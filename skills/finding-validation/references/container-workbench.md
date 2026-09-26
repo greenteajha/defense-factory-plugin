@@ -4,9 +4,9 @@ Stage 3 tests every finding inside **one disposable container per run** on the u
 
 ## Engine abstraction
 
-`scripts/check_environment.py` detects one usable engine CLI from `docker`, `podman`, or `nerdctl` (Docker Desktop and Colima present `docker`; Podman presents `podman`; Rancher Desktop presents `nerdctl` or `docker`). Apple `container` is never used. Set `DEFENSE_FACTORY_ENGINE` to force one. Run `check_environment.py` **first**: if no engine is usable, the daemon is down, or memory is below the floor, stop and report exactly what to install or start. Never run the target on the host.
+`scripts/check_environment.py` detects Docker (Docker Desktop). Docker is located from the PATH first, then from standard install locations (`/usr/local/bin/docker`, `/opt/homebrew/bin/docker`, `~/.docker/bin/docker`, the Docker.app bundle), so a running Docker Desktop is found even when the shell PATH is minimal — for example a non-interactive or remote shell. Set `DEFENSE_FACTORY_DOCKER` to force a specific docker executable. Apple `container` is never used. Run `check_environment.py` **first**: if Docker is missing, the daemon is down, or memory is below the floor, stop and report exactly what to install or start. Never run the target on the host.
 
-Use only commands the three CLIs share: `build`, `run` with `--label`/`--memory`/`--cpus`/`--pids-limit`/`--network`, `image inspect --format '{{.Id}}'` for digests, and label-filtered `ps`/`images`/`volume ls`/`network ls` with `rm`.
+Uses `build`, `run` with `--label`/`--memory`/`--cpus`/`--pids-limit`/`--network`, `image inspect --format '{{.Id}}'` for digests, and label-filtered `ps`/`images`/`volume ls`/`network ls` with `rm`.
 
 ## Build the workbench with no personal data
 

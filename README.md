@@ -1,17 +1,18 @@
 # Defense Factory Plugin
 
-An early, provider-neutral application security plugin inspired by [OpenAI's Defense Factory](https://openai.com/the-defense-factory/). Version 0.5.0 implements stages 1, 2, and 3 and sub-stage 3b of a [six-stage workflow](docs/workflow-contracts.md), the `threat-model`, `finding-discovery`, `finding-validation`, and `attack-path-analysis` skills, plus `defense-factory-review`, which runs them in order, with portable manifests and client adapters for Claude Code, ChatGPT/Codex, and Cursor. It is an independent project, not an OpenAI product or an implementation of OpenAI's full Defense Factory.
+An early, provider-neutral application security plugin inspired by [OpenAI's Defense Factory](https://openai.com/the-defense-factory/). Version 0.5.0 implements stages 1, 2, 3, and 4 and sub-stage 3b of a [six-stage workflow](docs/workflow-contracts.md), the `threat-model`, `finding-discovery`, `finding-validation`, `attack-path-analysis`, and `patch-preparation` skills, plus `defense-factory-review`, which runs them in order, with portable manifests and client adapters for Claude Code, ChatGPT/Codex, and Cursor. It is an independent project, not an OpenAI product or an implementation of OpenAI's full Defense Factory.
 
 ## What is in 0.5.0
 
 - `plugin.json` is the canonical Agent Plugins 1.0 manifest. `skills/` holds the shared skills.
 - `skills/threat-model` builds, reuses, or revises an evidence-backed threat model of an authorized repository (stage 1). It records who requested the assessment (it does not prompt for confirmation), works read-only and offline, and saves output to a self-ignoring `.defense-factory/` folder, also for folders that are not Git repositories. Its helpers need Python 3.9 or later. [docs/threat-model-parity.md](docs/threat-model-parity.md) maps it against the Codex Security threat-model skill.
 - `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `.agents/plugins/marketplace.json` are thin packaging adapters. Cursor uses the root manifest. No MCP server, credentials, scanner, patch automation, or production integration is bundled.
-- `skills/defense-factory-review` runs the implemented stages in order in one run when you ask for a Defense Factory review: stage 1, then stage 2, then stage 3, then stage 3b without further prompts, then one combined summary.
+- `skills/defense-factory-review` runs the implemented stages in order in one run when you ask for a Defense Factory review: stage 1, then stage 2, then stage 3, then stage 3b, then stage 4 without further prompts, then one combined summary.
 - `skills/finding-discovery` starts from a stage 1 threat model, or a narrow scan of named paths, and records deduplicated, **unvalidated** findings with source, control, sink, `file:line` evidence, counterevidence, and an investigation question for stage 3, accounting for every threat-model hypothesis (stage 2). [docs/finding-discovery-design.md](docs/finding-discovery-design.md) describes it; [docs/finding-discovery-parity.md](docs/finding-discovery-parity.md) maps it against Codex Security.
 - `skills/finding-validation` takes the stage 2 findings and gives each a verdict of `confirmed`, `rejected`, or `inconclusive`, backed by evidence, by building one disposable container per run on your own computer, installing the target's prerequisites, running the app and a per-finding test, then deleting everything the run created; clean-up removes only what the run labelled, so your other containers are untouched (stage 3). Its helpers need Python 3.9 or later and Docker Desktop. [docs/validation-design.md](docs/validation-design.md) describes it; [docs/validation-parity.md](docs/validation-parity.md) maps it against Codex Security.
 - `skills/attack-path-analysis` (stage 3b) gives each validated finding a severity (`critical` to `low`, or `ignore`) and a priority (P0 to P3) from an evidence-based attack path: facts, then impact and likelihood, then a fixed severity policy that its check script recomputes. It calibrates against stage 1's target-specific severity table. [docs/attack-path-design.md](docs/attack-path-design.md) describes it; [docs/attack-path-parity.md](docs/attack-path-parity.md) maps it against Codex Security.
-- Stages 4 to 6 are specified in `docs/workflow-contracts.md` and are **not yet implemented**.
+- `skills/patch-preparation` takes the findings stage 3b rated `reportable` and prepares a minimal, tested fix for each in a disposable container: it develops the fix on a copy, verifies it in an ordered gate sequence (build, the stage 3 reproduction now blocked, a legitimate control, the target's own checks, minimal scope), reviews the patch candidate with fresh context, and records a diff plus evidence with an outcome of `fixed`, `no_change`, `blocked`, or `inconclusive` (stage 4). The diff is recorded, never applied to your working tree. Its helpers need Python 3.9 or later and Docker Desktop. [docs/patch-preparation-design.md](docs/patch-preparation-design.md) describes it; [docs/patch-preparation-parity.md](docs/patch-preparation-parity.md) maps it against Codex Security.
+- Stages 5 and 6 (human review, revalidation) are specified in `docs/workflow-contracts.md` and are **not yet implemented**.
 
 ## Layout
 
@@ -21,7 +22,8 @@ skills/threat-model/                stage 1 skill: SKILL.md, references, templat
 skills/finding-discovery/           stage 2 skill: SKILL.md, references, schema, example, helper scripts, evals
 skills/finding-validation/          stage 3 skill: SKILL.md, references, schema, example, helper scripts, evals
 skills/attack-path-analysis/       stage 3b skill: SKILL.md, references, schema, example, helper scripts, evals
-skills/defense-factory-review/      runs stages 1, 2, 3, and 3b in order: SKILL.md, evals
+skills/patch-preparation/           stage 4 skill: SKILL.md, references, schema, example, helper scripts, evals
+skills/defense-factory-review/      runs stages 1, 2, 3, 3b, and 4 in order: SKILL.md, evals
 docs/workflow-contracts.md          stage handoff and evidence contracts
 docs/threat-model-parity.md         capability map against Codex Security's threat-model skill
 docs/finding-discovery-design.md    stage 2 design
@@ -29,6 +31,7 @@ docs/finding-discovery-parity.md    capability map against Codex Security's disc
 docs/validation-design.md           stage 3 design
 docs/validation-parity.md           capability map against Codex Security's validation phase
 docs/attack-path-design.md          stage 3b design
+docs/patch-preparation-design.md    stage 4 design
 docs/attack-path-parity.md          capability map against Codex Security's attack-path phase
 .claude-plugin/plugin.json          Claude Code metadata adapter
 .claude-plugin/marketplace.json     Claude Code marketplace catalog
@@ -51,7 +54,7 @@ tests/                              regression tests for the package check
 
 The `-chatgpt-` and `-claude-` packages are built outside this repository by a separate plugin packager and attached to GitHub Releases; Cursor installs from the repository itself; see [RELEASING.md](RELEASING.md#packages). The target client must support plugins and skills. A GitHub download by itself does not activate any skill. ChatGPT web/workspace distribution and Claude or Cursor marketplace publication are separate review and installation paths; this release does not claim those routes. Repository and execution access come from the host, not this package.
 
-Installing this version adds the `threat-model`, `finding-discovery`, `finding-validation`, `attack-path-analysis`, and `defense-factory-review` skills. Ask for "a Defense Factory review" of a repository to run stages 1, 2, 3, and 3b in one go, or ask for a threat model (stage 1), security findings (stage 2), validation of those findings (stage 3), or their severity and priority (stage 3b) on their own, or invoke any skill by name. Stage 3 needs Docker Desktop on your computer and runs the target in a disposable container. Skills for later stages will be added under `skills/` as they are implemented.
+Installing this version adds the `threat-model`, `finding-discovery`, `finding-validation`, `attack-path-analysis`, `patch-preparation`, and `defense-factory-review` skills. Ask for "a Defense Factory review" of a repository to run stages 1, 2, 3, 3b, and 4 in one go, or ask for a threat model (stage 1), security findings (stage 2), validation of those findings (stage 3), their severity and priority (stage 3b), or a prepared fix for the reportable findings (stage 4) on their own, or invoke any skill by name. Stages 3 and 4 need Docker Desktop on your computer and run the target in a disposable container; stage 4 records a diff per fix and never changes your working tree. Skills for later stages will be added under `skills/` as they are implemented.
 
 ## Data and permissions
 

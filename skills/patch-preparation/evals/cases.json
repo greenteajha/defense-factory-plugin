@@ -1,0 +1,92 @@
+{
+  "skill": "patch-preparation",
+  "description": "Activation and behavior cases for manual or automated smoke tests of the patch-preparation (stage 4) skill.",
+  "activation": [
+    {
+      "prompt": "Prepare fixes for the reportable findings from this repository's review.",
+      "activates": true
+    },
+    {
+      "prompt": "Patch FD-16 and verify the fix.",
+      "activates": true
+    },
+    {
+      "prompt": "Run stage 4 (patch preparation) on this repository.",
+      "activates": true
+    },
+    {
+      "prompt": "Remediate the confirmed security findings and show me the diff.",
+      "activates": true
+    },
+    {
+      "prompt": "Threat model this repository.",
+      "activates": false
+    },
+    {
+      "prompt": "Find the security vulnerabilities in this service.",
+      "activates": false
+    },
+    {
+      "prompt": "Rate the severity and priority of the validated findings.",
+      "activates": false
+    },
+    {
+      "prompt": "Fix the failing unit test in the checkout module.",
+      "activates": false
+    }
+  ],
+  "behavior": [
+    {
+      "name": "happy path",
+      "setup": "A complete stage 3b run exists with reportable, deferred, and ignore analyses, and Docker Desktop is running.",
+      "prompt": "Prepare fixes for the reportable findings.",
+      "expect": [
+        "checks the environment first, then finds the stage 3b record with find_attack_paths.py without asking",
+        "prepares a fix only for reportable findings, in priority order, and lists deferred and ignore ones as not eligible",
+        "builds each fix in a disposable container, records a diff under patches/, and never edits the user's working tree",
+        "reaches fixed only when every verification gate passes, with a focused test and before/after reproduction",
+        "cleans up by label so other containers are untouched; check_patches.py and check_citations.py pass"
+      ]
+    },
+    {
+      "name": "no stage 3b record",
+      "setup": "No attack-paths.json exists in the run folders.",
+      "prompt": "Prepare fixes for the reportable findings.",
+      "expect": [
+        "find_attack_paths.py reports none usable",
+        "does not invent findings to fix",
+        "offers to run stage 3b (attack-path-analysis) first"
+      ]
+    },
+    {
+      "name": "Docker not available",
+      "setup": "Docker Desktop is not installed or its daemon is not running.",
+      "prompt": "Prepare fixes for the reportable findings.",
+      "expect": [
+        "check_environment.py reports the unmet prerequisite",
+        "stops before building anything and never patches the target on the host",
+        "tells the user what is not met and how to fix it, then asks them to rerun"
+      ]
+    },
+    {
+      "name": "a fix cannot be verified",
+      "setup": "A reportable finding whose target will not build in the run's time budget.",
+      "prompt": "Prepare fixes for the reportable findings.",
+      "expect": [
+        "records the outcome as inconclusive with the exact proof gap, never fixed",
+        "treats the build failure as a proof gap, not as evidence the code is safe",
+        "keeps the run's other fixes and cleans up by label"
+      ]
+    },
+    {
+      "name": "already safe on inspection",
+      "setup": "A reportable finding whose reported path is already contained on this revision.",
+      "prompt": "Prepare a fix for that finding.",
+      "expect": [
+        "records the outcome as no_change with the evidence that the code is already safe",
+        "writes no patch and changes no file",
+        "does not weaken or alter intended behaviour"
+      ]
+    }
+  ]
+}

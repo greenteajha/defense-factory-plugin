@@ -2,6 +2,12 @@
 
 All notable changes are recorded here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+- Added stage 4 (patch preparation) as the `patch-preparation` skill. It takes the findings stage 3b rated `reportable` and prepares a minimal, tested fix for each inside one disposable container per run on the user's own computer: it develops the fix on the copied code (never the working tree), runs stage 3's reproduction and a legitimate control to establish the before-state, implements the smallest repository-native fix at the shared boundary, and verifies it in an ordered gate sequence (build/type check, the reproduction now blocked, a legitimate-behaviour control, the target's own tests and lint, minimal scope), with a fresh read-only patch-candidate review. Each fix is recorded as a unified diff under `patches/` plus tests and before/after evidence, with an outcome of `fixed`, `no_change`, `blocked`, or `inconclusive`; the diff is never applied to the user's tree. Setup failures are never counterevidence (they make the outcome `inconclusive`, never `fixed`), and clean-up removes only what the run labelled. Maps to Codex Security's `fix-finding` skill; its `assess-patch-risk` (merge eligibility) is deferred to stage 5. Includes `docs/patch-preparation-design.md`, `docs/patch-preparation-parity.md`, the `patches.json` schema and example, five helpers (`find_attack_paths.py`, `start_patches.py`, `normalize_patches.py`, `check_patches.py`, `render_patches.py`), references, `agents/openai.yaml`, eval cases, and 29 tests. Not yet tested live in each client.
+- `defense-factory-review` now runs stage 4 after stage 3b (when stage 3b rated at least one finding `reportable`) and adds an outcomes-by-type line and the `patches.md` path to its summary; its next-step line points to stage 5 (human review of the prepared diffs before they are applied).
+- Promoted the container helpers (`export_target.py`, `run_container.py`, `cleanup_run.py`) and the stage 3b record checks (`check_attack_paths.py`, `normalize_attack_paths.py`, `attack-paths.schema.json`) into `shared/`, because stage 4 reuses the container and consumes the stage 3b record; the shared record reference gained a stage 4 section.
+
 ## [0.5.0] - 2026-09-27
 
 Adds sub-stage 3b (attack-path analysis) as the `attack-path-analysis` skill, and `defense-factory-review` now runs stages 1, 2, 3, and 3b. Tested live by the maintainer in Claude Code and ChatGPT/Codex (upload package), running full reviews.

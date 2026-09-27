@@ -1,0 +1,4 @@
+interface:
+  display_name: "Patch Preparation"
+  short_description: "Prepare and verify a minimal fix for a reportable finding"
+  default_prompt: "Use $patch-preparation to prepare and verify fixes for this repository's reportable findings."

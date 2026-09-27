@@ -35,7 +35,7 @@ Give each finding that stage 3 validated a **severity** and a **priority**, deri
 
 ## Completion
 
-The stage is `complete` when every eligible finding has exactly one analysis (or is named in `coverage_gaps` as not selected) and both checks pass. Report the path of `attack-paths.md`, the count by severity and by decision, and the priority order of the `reportable` findings. Stage 4 (patch preparation) is not implemented yet, so suggest human triage of the `reportable` findings in priority order, P0 first.
+The stage is `complete` when every eligible finding has exactly one analysis (or is named in `coverage_gaps` as not selected) and both checks pass. Report the path of `attack-paths.md`, the count by severity and by decision, and the priority order of the `reportable` findings. Suggest stage 4 (patch preparation) next, to prepare and verify a fix for the `reportable` findings in priority order, P0 first.
 
 ## Failure conditions
 

@@ -49,12 +49,13 @@
       "setup": "A container engine is running.",
       "prompt": "Do a Defense Factory review of this repository.",
       "expect": [
-        "says once that it will run stage 1, stage 2, stage 3, and stage 3b, that stage 2 can take long, and that stage 3 builds and runs a disposable container",
+        "says once that it will run stage 1, stage 2, stage 3, stage 3b, and stage 4, that stage 2 can take long, and that stages 3 and 4 build and run a disposable container",
         "asks no authorization or output-location question",
-        "runs the threat-model, finding-discovery, finding-validation, then attack-path-analysis skills without asking in between",
-        "all four stages write into the same .defense-factory/runs/<run_id>/ folder",
+        "runs the threat-model, finding-discovery, finding-validation, attack-path-analysis, then patch-preparation skills without asking in between",
+        "all five stages write into the same .defense-factory/runs/<run_id>/ folder",
         "each stage carries the authorization forward from the previous run",
-        "ends with one summary covering all four stages, verdicts by type, severities and priorities, the overall status, and that stage 4 is not available yet"
+        "stage 4 prepares a fix only for reportable findings and records a diff per fix without modifying the working tree",
+        "ends with one summary covering all five stages, verdicts and outcomes by type, severities and priorities, the overall status, and that stage 5 (human review) is not available yet"
       ]
     },
     {
@@ -71,11 +72,11 @@
     },
     {
       "name": "missing stage skill",
-      "setup": "Only the defense-factory-review, threat-model, finding-discovery, and finding-validation skills are installed.",
+      "setup": "Only the defense-factory-review, threat-model, finding-discovery, finding-validation, and attack-path-analysis skills are installed (patch-preparation is not).",
       "prompt": "Do a Defense Factory review of this repository.",
       "expect": [
-        "says the attack-path-analysis skill is missing",
-        "does not imitate stage 3b"
+        "says the patch-preparation skill is missing",
+        "does not imitate stage 4"
       ]
     },
     {

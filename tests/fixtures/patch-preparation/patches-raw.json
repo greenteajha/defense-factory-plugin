@@ -1,0 +1,229 @@
+{
+  "record": {
+    "record_version": 1,
+    "stage": "4-patch-preparation",
+    "status": "inconclusive",
+    "run_id": "20260926T090000Z",
+    "timestamp": "2026-09-26T10:30:00Z",
+    "actor": "Example agent (Claude Code); requested by the user",
+    "model": "Example Model 1.0",
+    "skill_version": "patch-preparation/sha256:0123456789abcdef",
+    "target_id": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "target_kind": "git_revision",
+    "version": "0123456789abcdef0123456789abcdef01234567",
+    "revision": "0123456789abcdef0123456789abcdef01234567",
+    "scope": "whole-repository",
+    "authorization": "inherited from stage 3b run 20260926T090000Z: requested by the user in session on 2026-09-26: \"Do a Defense Factory review of this repository\"",
+    "output_location": "default .defense-factory (Git-ignored)",
+    "source": "analysed-record",
+    "inputs": [],
+    "tools": "Python 3.12; prepare_workspace.py, find_attack_paths.py, start_patches.py, export_target.py, run_container.py, cleanup_run.py; docker 29.6.2",
+    "evidence": "patches.md; the diffs under patches/; the stage 1-3b records referenced in patches.json",
+    "assumptions": [],
+    "coverage_gaps": [],
+    "next_action": "Stage 5: human review of the prepared patches, FD-1 first; FD-2 stays open until the build unknown is resolved."
+  },
+  "validated_record": {
+    "path": "../3b-attack-path-analysis/attack-paths.json",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "run_id": "20260926T090000Z"
+  },
+  "threat_model": null,
+  "security_guidance": null,
+  "environment": {
+    "host_os": "darwin",
+    "host_arch": "arm64",
+    "engine": "docker",
+    "engine_version": "29.6.2",
+    "base_image": "python:3.12-slim",
+    "base_image_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "emulation": "none",
+    "code_source": "git-archive:0123456789abcdef0123456789abcdef01234567",
+    "limits": {
+      "memory": "2g",
+      "cpus": "2",
+      "pids": 512,
+      "timeout_seconds": 600
+    },
+    "network_setup": "on",
+    "network_testing": "off",
+    "cleanup": {
+      "label": "com.defensefactory.run=20260926T090000Z",
+      "removed": {
+        "containers": 2,
+        "images": 1,
+        "volumes": 0,
+        "networks": 0
+      },
+      "remaining": 0
+    }
+  },
+  "patches": [
+    {
+      "analysis_id": "AP-3",
+      "finding_id": "FD-3",
+      "finding_key": "login-next-redirect",
+      "finding_fingerprint": "fp:3333333333333333",
+      "title": "Login handler redirects to any URL in the next parameter",
+      "severity": "low",
+      "priority": "P3",
+      "outcome": "no_change",
+      "locations": [
+        {
+          "path": "src/api/auth.py",
+          "start_line": 15,
+          "end_line": 15,
+          "role": "root_control"
+        }
+      ],
+      "vulnerable_path": "The login handler was reported to redirect to any next-parameter URL.",
+      "security_invariant": "The redirect target stays on the application's own origin.",
+      "patch_strategy": "No change: reading the current code shows the next parameter is already passed through an allowlist that rejects off-origin URLs, so the reported open redirect does not hold on this revision.",
+      "patch_ref": null,
+      "files_changed": [],
+      "tests_added": [],
+      "gates": [],
+      "reproduction_before": "The stage 3 reproduction was re-run: an off-origin next value returned a 400, not a redirect.",
+      "reproduction_after": "Unchanged; no code was modified.",
+      "legitimate_behavior": "A same-origin next value still redirects normally.",
+      "candidate_review": "Fresh read-only review confirmed the allowlist is applied before the redirect on every branch.",
+      "remaining_risk": "None for this finding; the allowlist already holds.",
+      "confidence": {
+        "level": "Medium",
+        "reason": "The allowlist is visible in source and the reproduction did not redirect, but only the two documented next values were exercised."
+      }
+    },
+    {
+      "analysis_id": "AP-1",
+      "finding_id": "FD-1",
+      "finding_key": "archive-member-path-zip",
+      "finding_fingerprint": "fp:1111111111111111",
+      "title": "Archive import escapes the import folder (path traversal)",
+      "severity": "high",
+      "priority": "P1",
+      "outcome": "fixed",
+      "locations": [
+        {
+          "path": "src/api/upload.py",
+          "start_line": 24,
+          "end_line": 26,
+          "role": "root_control"
+        },
+        {
+          "path": "src/api/upload.py",
+          "start_line": 28,
+          "end_line": 28,
+          "role": "sink"
+        }
+      ],
+      "vulnerable_path": "An uploaded archive's member names reach the extraction write with only a substring containment check, so a name that climbs out of the import folder is written outside it.",
+      "security_invariant": "Every extracted member is written inside the import folder, after its path is normalized.",
+      "patch_strategy": "Normalize each member's destination and confirm it stays within the import folder before writing, rejecting any member that would resolve outside it. Minimal change at the shared write boundary in extract_zip.",
+      "patch_ref": "patches/FD-1.patch",
+      "files_changed": [
+        "src/api/upload.py"
+      ],
+      "tests_added": [
+        "tests/test_upload_traversal.py: a member named ../outside.txt is rejected; a normal member still extracts"
+      ],
+      "gates": [
+        {
+          "gate": "build and type check",
+          "result": "pass"
+        },
+        {
+          "gate": "the stage 3 reproduction (../ member) is now rejected",
+          "result": "pass"
+        },
+        {
+          "gate": "legitimate control: a normal archive still imports",
+          "result": "pass"
+        },
+        {
+          "gate": "existing test suite and package checks pass",
+          "result": "pass"
+        },
+        {
+          "gate": "scope minimal: one function changed",
+          "result": "pass"
+        }
+      ],
+      "reproduction_before": "Per stage 3 VD-1, a crafted member wrote a file outside the import folder (artifacts/FD-1/before.log).",
+      "reproduction_after": "The same crafted archive is now rejected and writes nothing outside the folder (artifacts/FD-1/after.log).",
+      "legitimate_behavior": "A benign archive imports normally, writing only inside the import folder.",
+      "candidate_review": "Fresh read-only review found no other member path reaching the write, and both the reject and accept branches were exercised.",
+      "remaining_risk": "The tar path is a separate finding (FD-2) and is not covered by this diff.",
+      "confidence": {
+        "level": "High",
+        "reason": "Reproduced before and after through the real import interface against a passing control, with the traversal now rejected."
+      },
+      "artifacts": [
+        "artifacts/FD-1/before.log",
+        "artifacts/FD-1/after.log"
+      ]
+    },
+    {
+      "analysis_id": "AP-2",
+      "finding_id": "FD-2",
+      "finding_key": "archive-member-path-tar",
+      "finding_fingerprint": "fp:2222222222222222",
+      "title": "TAR import follows member names and links outside the import folder",
+      "severity": "medium",
+      "priority": "P2",
+      "outcome": "inconclusive",
+      "locations": [
+        {
+          "path": "src/api/upload.py",
+          "start_line": 34,
+          "end_line": 36,
+          "role": "root_control"
+        }
+      ],
+      "vulnerable_path": "extract_tar calls the library's extract-all with no member filter, so absolute names, ../ names, and symbolic links are honoured.",
+      "security_invariant": "Every extracted TAR member stays inside the import folder, and no member is a link out of it.",
+      "patch_strategy": "A per-member filter that normalizes names and rejects absolute paths, parent-directory escapes, and links was drafted, mirroring the ZIP fix.",
+      "patch_ref": "patches/FD-2.patch",
+      "files_changed": [
+        "src/api/upload.py"
+      ],
+      "tests_added": [
+        "tests/test_upload_traversal.py: a tar with a ../ member and a symlink is rejected"
+      ],
+      "gates": [
+        {
+          "gate": "build and type check",
+          "result": "pass"
+        },
+        {
+          "gate": "the stage 3 reproduction is now rejected",
+          "result": "unknown"
+        },
+        {
+          "gate": "existing test suite passes",
+          "result": "unknown"
+        }
+      ],
+      "reproduction_before": "Per stage 3 VD-2, the finding was inconclusive because the effect depended on the deployed runtime's default extraction filter.",
+      "reproduction_after": "The verification gates could not run: the test image would not build in the run's time budget, so the fix is not proven.",
+      "legitimate_behavior": "Not established; the build did not complete.",
+      "candidate_review": "Not performed; the patch was not verified.",
+      "remaining_risk": "The drafted fix is unverified; it may over- or under-reject members until the gates run.",
+      "proof_gap": "The test image could not be built within the run, so the fix and its regression test were not exercised.",
+      "confidence": {
+        "level": "Low",
+        "reason": "The fix is drafted from source, but no gate ran to confirm it."
+      }
+    }
+  ],
+  "not_eligible": [
+    {
+      "analysis_id": "AP-4",
+      "finding_id": "FD-4",
+      "decision": "deferred",
+      "reason": "deferred in stage 3b: needs an admin-session test before it can be rated, so no fix is prepared"
+    }
+  ],
+  "open_questions": [
+    "FD-2's fix stays unverified until the test image builds; a longer run would settle it."
+  ]
+}

@@ -7,7 +7,7 @@ Every Defense Factory stage output starts with a YAML header, the stage record, 
 | Field | Required | Meaning |
 | --- | --- | --- |
 | `record_version` | yes | Format version of this header. Currently `1`. |
-| `stage` | yes | Stage identifier, also used as the stage folder name: `1-threat-model` or `2-finding-discovery`. |
+| `stage` | yes | Stage identifier, also used as the stage folder name: `1-threat-model`, `2-finding-discovery`, `3-finding-validation`, `3b-attack-path-analysis`, or `4-patch-preparation`. |
 | `status` | yes | One of the status values below. |
 | `run_id` | yes | Identifier of this run; the name of the run folder. |
 | `timestamp` | yes | When the record was written, in UTC ISO 8601 (for example `2026-09-24T07:15:00Z`). Take it from `prepare_workspace.py` or the system clock; never estimate it. |
@@ -82,6 +82,20 @@ Stage 3b keeps the record as the `record` object in `attack-paths.json`; `render
 | `decisions` | derived | Number of analyses by decision (`reportable`, `deferred`, `ignore`). |
 
 Within one run, stage 3b carries the stage 3 request forward: `authorization` reads `inherited from stage 3 run <run_id>: ` followed by the stage 3 record's `authorization` value. Stage 3b only reads code and records; it runs nothing.
+
+## Stage 4 (patch preparation) fields
+
+Stage 4 keeps the record as the `record` object in `patches.json`; `render_patches.py` writes it into `patches.md`. The per-patch fields (outcome, patch strategy, files changed, tests added, verification gates, before/after reproduction, remaining risk) live in each `patches` entry, not the header, and the run's engine and image provenance live in the top-level `environment` object. The first field below is written by `start_patches.py`; the rest are derived from the body.
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `source` | yes | Always `analysed-record`: stage 4 starts from a stage 3b `attack-paths.json`. |
+| `validated_record_ref` | derived | Path and sha256 of the stage 3b record used. |
+| `outcomes` | derived | Number of patches by outcome (`fixed`, `no_change`, `blocked`, `inconclusive`). |
+| `engine` | derived | The engine and architecture the run used, for example `docker on arm64`. |
+| `cleanup` | derived | `clean` when no labelled resource remained, or `incomplete` with the count that did. |
+
+Within one run, stage 4 carries the stage 3b request forward: `authorization` reads `inherited from stage 3b run <run_id>: ` followed by the stage 3b record's `authorization` value. Stage 4 builds and runs a disposable container, like stage 3; the diff it produces is recorded, never applied to the target tree.
 
 ## Status values
 
